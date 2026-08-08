@@ -111,13 +111,21 @@ Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot relo
 
 **No SSR service in the dev stack, deliberately.** While Vite is serving hot assets, Inertia switches to a hot SSR URL that is not configured, so the renderer would sit idle while every page silently fell back to client rendering. Use `docker-compose.prod.yml` to exercise SSR.
 
-**Verification status — partly unverified.** The host disk filled up mid-way (135 MB free of 228 GB), which left Docker's content store throwing I/O errors on every command, so the work could not be finished:
+**Both stacks verified end to end.**
 
-- Verified: both compose files validate; the `base` and `dev` images build; PHP extensions (gd, pdo_mysql, zip, intl, exif) install; MySQL comes up healthy; the entrypoint's wait-for-database works (`Waiting for database at db:3306... ready`).
-- Found and fixed, **not yet re-verified**: the `dev` stage installed no dependencies, so the anonymous `vendor`/`node_modules` volumes masked empty directories — `artisan` died on a missing autoloader and `vite` was not found. The stage now runs `composer install` (with the autoloader) and `npm ci`.
-- Not exercised at all: the `prod` target — nginx, supervisor, and the SSR renderer in a container.
+- Dev: `/`, `/programmer`, `/photographer` all 200, `/admin` 302s to login, Vite serves on 5173, MySQL reports 22 tables, and the full suite (70 tests) passes inside the container.
+- Prod: nginx + php-fpm + the SSR renderer all RUNNING under supervisor; all three pages genuinely server-rendered (checked against the DOM with the JSON payload stripped, not just `assertSee`); per-route titles correct; nginx serves hashed assets with `public, immutable` and a one-year max-age.
 
-Next session: free disk space, then `docker compose up --build` and `docker compose -f docker-compose.prod.yml up --build`, and check SSR really renders with `curl -s localhost:8080/programmer | grep -c '<h1'`.
+**Four bugs the containers exposed that nothing else would have:**
+
+1. The `dev` stage installed no dependencies, so the anonymous `vendor`/`node_modules` volumes masked empty directories — `artisan` died on a missing autoloader and `vite` was not found. The stage now runs `composer install` and `npm ci`.
+2. `composer install --no-autoloader` in that same stage meant there was no `vendor/autoload.php` at all.
+3. **Vite externalises SSR dependencies by default**, so `bootstrap/ssr/ssr.js` imported `@inertiajs/react` as a bare specifier. The production image ships the SSR bundle without `node_modules`, so the renderer crashed on boot, supervisor gave up — and Inertia then silently fell back to client rendering, which is the exact failure SSR exists to prevent. Fixed with `ssr.noExternal: true` in `vite.config.js`, which bundles the dependencies in rather than shipping 400 MB of modules.
+4. **Anonymous volumes are not refreshed when the image is rebuilt.** After the `dev` stage started installing dependencies, the container still booted against the *old* volume — 32 packages, the production set — while the host's bind-mounted `bootstrap/cache/packages.php` listed the host's packages. The result was `Class "Laravel\Pail\PailServiceProvider" not found`, which points at nothing useful. Fixed in two places: `docker/entrypoint.sh` stamps the lock file hash into `vendor/.lock-stamp` and `node_modules/.lock-stamp` and reinstalls when it drifts, and `bootstrap/cache` is now its own anonymous volume so the host's derived state stops leaking in. The entrypoint also deletes `packages.php`/`services.php` on every boot — they are regenerable, and a wrong one is worse than a stale one.
+
+   **Not yet re-verified in a container.** Docker Desktop's daemon stopped coming up on this machine (host disk at 99%, ~3 GB free) and three restart attempts failed, so this fix is reasoned from a confirmed diagnosis rather than observed working. Re-run `docker compose down -v && docker compose up --build` once there is disk headroom.
+
+**Docker's own storage broke during this.** When the host disk filled, containerd's content store started throwing `input/output error` on every command — even `docker images`. Restarting Docker Desktop cleared it, and `docker builder prune -af` reclaimed 8.7 GB. Build cache only: regenerable, and it touches no images, volumes or containers — which mattered, because other projects' containers were running at the time, so a broad prune or a Docker reset was never an option.
 
 ## Phase 6 — Polish & launch
 

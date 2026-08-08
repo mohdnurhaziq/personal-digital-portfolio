@@ -20,6 +20,9 @@ services:
       # empty or macOS-built host directory shadow them.
       - /var/www/html/vendor
       - /var/www/html/node_modules
+      # Laravel caches the discovered package list here. The host's copy lists
+      # packages installed on the host, which are not the container's.
+      - /var/www/html/bootstrap/cache
     ports:
       - '${APP_PORT:-8000}:8000'
     environment:

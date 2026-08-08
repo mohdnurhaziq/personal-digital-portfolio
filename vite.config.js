@@ -13,6 +13,14 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    ssr: {
+        // Bundle dependencies into the SSR output instead of leaving them as
+        // bare imports. The production image ships bootstrap/ssr without
+        // node_modules, so an externalised import of @inertiajs/react just
+        // crashes the renderer on boot — and Inertia then quietly falls back to
+        // client rendering, which is the failure SSR exists to prevent.
+        noExternal: true,
+    },
     build: {
         rollupOptions: {
             output: {
