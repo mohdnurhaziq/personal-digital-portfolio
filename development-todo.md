@@ -41,10 +41,11 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
 ## Phase 2 — Database schema (content becomes dynamic, not hardcoded)
 
-- [ ] Migrations: `projects`, `experience`, `testimonials`, `certifications`, `gallery_photos` (with a `category` column), `gear_items`, `site_settings` (stats, bio text, etc.)
-- [ ] Eloquent models + relationships
-- [ ] Seeders using the current placeholder content, so pages render something immediately
-- [ ] Factories (optional, useful if you add tests later)
+- [x] Migrations — 11 tables. Beyond the ones listed here, the preview needed four more to be fully DB-driven: `stats` (welcome screen), `tech_stacks` (the icon grid), `tags` (teaser rows), `contact_links` (differs per path). Table is `experiences`, not `experience`, to match Eloquent's pluralisation.
+- [x] Eloquent models — all 11, with `HasSortOrder` and `BelongsToPath` traits shared across them rather than repeating scopes. No relationships needed yet: every content type is a flat, hand-ordered list.
+- [x] Seeders using the current placeholder content — `PortfolioContentSeeder`, mirroring the preview verbatim (same copy, same gallery tile order, same big/small project rhythm). Re-runnable: it clears each table first.
+- [x] Admin user seeded from `ADMIN_EMAIL`/`ADMIN_PASSWORD` via `config/portfolio.php`. **No default password** — the seeder skips the user when unset, so a deploy can't fall back to a guessable credential. Set `ADMIN_PASSWORD` in `.env` before seeding.
+- [x] Factories — skipped in favour of `tests/Feature/PortfolioContentSeederTest.php` (7 tests), which locks the seeded content to the preview and proves the seeder is idempotent. Factories can come later if admin CRUD tests need varied data.
 
 ## Phase 3 — Public pages (port the static preview into real components)
 
@@ -61,7 +62,7 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
 ## Phase 4 — Auth & admin CMS
 
-- [ ] Seed a single admin user (Breeze auth is already scaffolded from Phase 1)
+- [x] Seed a single admin user — done in Phase 2 (`DatabaseSeeder`, driven by `config/portfolio.php`). Breeze's public registration route still needs disabling.
 - [ ] Protect `/admin/*` routes with the `auth` middleware
 - [ ] Admin CRUD screens: Projects, Experience, Testimonials, Certifications, Gallery Photos, Gear, Site Settings
 - [ ] Install Spatie Media Library for photo/resume uploads with auto-thumbnailing
