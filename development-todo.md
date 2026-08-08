@@ -58,7 +58,14 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 - [x] Real routing (`/`, `/programmer`, `/photographer`) so links are shareable
 - [ ] Mobile pass — actually test on a real phone this time, not just responsive CSS guesses
 - [~] Accessibility pass: `prefers-reduced-motion` honoured (reveals skip straight to visible), visible `:focus-visible` ring, gallery filters are a labelled radiogroup, fork halves leave the tab order until revealed. Still needs a real screen-reader/keyboard run-through.
-- [~] SEO: per-route page titles and meta descriptions are in. **Open Graph tags still missing, and there is no SSR** — Inertia renders client-side, so page text is not in the served HTML. For a job-hunting portfolio that is worth fixing (see Phase 6).
+- [x] SEO: per-route titles, meta descriptions, Open Graph + Twitter cards, and canonical URLs, all via a shared `Seo` component. **SSR is now on**, so this is in the served HTML rather than only in the JSON payload — verified with JavaScript disabled: `/programmer` renders its `<h1>`, all seven section headings, and ~1.6k characters of real text.
+
+**Running SSR (gotcha worth remembering):**
+
+- `npm run build` now builds both bundles (`vite build && vite build --ssr`), then `php artisan inertia:start-ssr` runs the render process; `inertia:check-ssr` reports health.
+- **SSR silently falls back to client rendering while `npm run dev` is running.** Inertia sees the Vite hot file and switches to a hot SSR URL that isn't configured, and the failure is not logged — the page just comes back with an empty `<div id="app">`. Cost an hour. To check SSR, stop the dev server (delete `public/hot`), build, then start the SSR process.
+- `INERTIA_SSR_THROW_ON_ERROR=true` surfaces render failures instead of hiding them — the way to debug this.
+- `app.blade.php` deliberately has no `<title>`: it would come first in document order and beat the per-page title SSR injects.
 
 **Fidelity notes from checking against the preview in a real browser:**
 

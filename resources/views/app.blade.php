@@ -4,13 +4,13 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        {{-- No <title> here on purpose. Every page sets its own through Inertia's
+             <Head>, and SSR injects it via @inertiaHead. A title in this template
+             would come first in document order and win over the real one. --}}
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        {{-- Fonts are self-hosted through fontsource in resources/css/app.css,
+             so there is deliberately no font CDN link here. --}}
 
-        <!-- Scripts -->
         @routes
         @viteReactRefresh
         @vite(['resources/js/app.jsx', "resources/js/Pages/{$page['component']}.jsx"])

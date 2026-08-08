@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -33,6 +34,13 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+            ],
+            // The SSR process has no @routes blade directive to lean on, so the
+            // route list has to travel with the page for route() to resolve
+            // server-side.
+            'ziggy' => fn () => [
+                ...(new Ziggy)->toArray(),
+                'location' => $request->url(),
             ],
         ];
     }

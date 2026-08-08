@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import Seo from '@/Components/Portfolio/Seo';
 import { useEffect, useState } from 'react';
 import HeroPolaroids from '@/Components/Portfolio/HeroPolaroids';
 import HeroRain from '@/Components/Portfolio/HeroRain';
@@ -26,9 +26,7 @@ function Welcome({ settings, stats }) {
 
     return (
         <>
-            <Head title="Portfolio">
-                <meta name="description" content={settings.meta_description} />
-            </Head>
+            <Seo title="Portfolio" description={settings.meta_description} />
 
             <main className="relative min-h-screen overflow-hidden">
                 {/* Welcome */}

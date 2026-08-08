@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import Seo from '@/Components/Portfolio/Seo';
 import { useEffect } from 'react';
 import Card from '@/Components/Portfolio/Card';
 import ContactSection from '@/Components/Portfolio/ContactSection';
@@ -34,9 +34,11 @@ function Programmer({
 
     return (
         <div className={`min-h-screen pb-25 ${theme.page}`}>
-            <Head title="Programmer & project manager">
-                <meta name="description" content={settings.dev_intro} />
-            </Head>
+            <Seo
+                title="Programmer & project manager"
+                description={settings.dev_intro}
+                type="profile"
+            />
 
             <PageNav
                 brand={settings.brand_short}

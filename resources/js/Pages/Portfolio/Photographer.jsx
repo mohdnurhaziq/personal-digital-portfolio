@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import Seo from '@/Components/Portfolio/Seo';
 import { useEffect, useMemo, useState } from 'react';
 import Card from '@/Components/Portfolio/Card';
 import ContactSection from '@/Components/Portfolio/ContactSection';
@@ -32,9 +32,7 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
 
     return (
         <div className={`min-h-screen pb-25 ${theme.page}`}>
-            <Head title="Photography">
-                <meta name="description" content={settings.photo_intro} />
-            </Head>
+            <Seo title="Photography" description={settings.photo_intro} type="profile" />
 
             <PageNav
                 brand={settings.brand_short}
