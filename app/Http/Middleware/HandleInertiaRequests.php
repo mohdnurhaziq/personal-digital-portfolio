@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Admin\AdminResources;
+use App\Admin\Resource;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -42,6 +44,15 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            // Sidebar links for the admin. Only built for signed-in requests so
+            // the resource list is not exposed publicly.
+            'adminNav' => fn () => $request->user() ? collect(AdminResources::all())
+                ->map(fn (Resource $resource) => [
+                    'key' => $resource->key,
+                    'label' => $resource->plural,
+                ])
+                ->values() : null,
+            'status' => fn () => $request->session()->get('status'),
         ];
     }
 }

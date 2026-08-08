@@ -113,9 +113,9 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                 '--float-delay': `${(index % 5) * 0.4}s`,
                             }}
                         >
-                            {photo.image_path && (
+                            {photo.thumb_url && (
                                 <img
-                                    src={photo.image_path}
+                                    src={photo.thumb_url}
                                     alt={photo.title ?? ''}
                                     loading="lazy"
                                     className="absolute inset-2.5 z-1 size-[calc(100%-1.25rem)] rounded-[2px] object-cover"

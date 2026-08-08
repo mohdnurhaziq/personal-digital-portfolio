@@ -75,12 +75,20 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
 ## Phase 4 — Auth & admin CMS
 
-- [x] Seed a single admin user — done in Phase 2 (`DatabaseSeeder`, driven by `config/portfolio.php`). Breeze's public registration route still needs disabling.
-- [ ] Protect `/admin/*` routes with the `auth` middleware
-- [ ] Admin CRUD screens: Projects, Experience, Testimonials, Certifications, Gallery Photos, Gear, Site Settings
-- [ ] Install Spatie Media Library for photo/resume uploads with auto-thumbnailing
-- [ ] Basic upload validation (file type/size limits)
-- [ ] Drag-and-drop gallery reordering (nice-to-have, not required for v1)
+- [x] Seed a single admin user — done in Phase 2 (`DatabaseSeeder`, driven by `config/portfolio.php`).
+- [x] **Public registration removed.** Breeze's `register` routes, controller, page and test are gone, so the only account is the seeded one. A test asserts `/register` 404s and creates no user.
+- [x] Protect `/admin/*` with the `auth` middleware. `/dashboard` is kept as a redirect to `/admin`, because Breeze's auth controllers all redirect to that route name after login, verification and password confirmation.
+- [x] Admin CRUD screens for all ten content types + site settings. Driven by definitions in `app/Admin/AdminResources.php` rather than ten near-identical controllers: a resource declares its fields once and routes, validation, the index table and the form all read from it. Adding a content type needs no new controller.
+- [x] Install Spatie Media Library (11.23.4) for photo uploads with auto-thumbnailing — `thumb` (600px) and `display` (1600px) conversions, single-file collection so re-uploading replaces rather than piles up. GD is present, so conversions work.
+- [x] Basic upload validation — images only (`jpeg,jpg,png,webp`), 8 MB cap, enforced server-side.
+- [x] Reordering — up/down buttons persisting a new `sort_order`. Chose buttons over drag-and-drop: they work with a keyboard and on touch, which drag alone does not.
+- [ ] Resume PDF upload in site settings — not done; gallery photos are the only upload so far.
+
+**Verified in a browser, not just in tests:** edit → flash → list updates → public site reflects it; reorder persists; empty create is blocked with per-field errors; a real PNG upload generates conversions and appears in the public gallery.
+
+**Gotcha worth remembering:** the PHP tests passed while the edit form was actually broken, because they call `$this->put()` directly and bypass the form. The bug was in `Form.jsx` — Inertia's `post()` ignores `data`/`method` passed in options, so the `_method: put` override never reached the server and updates 404'd. It has to live in the form data. Only clicking the button in a real browser caught it.
+
+**Uploaded images need `APP_URL` to match how the site is served.** Media Library builds absolute URLs from it, so with the default `APP_URL=http://localhost` and the dev server on `127.0.0.1:8000` every uploaded image 404s. Set `APP_URL` correctly per environment.
 
 ## Phase 5 — Contact form & integrations
 

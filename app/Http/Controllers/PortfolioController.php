@@ -61,9 +61,16 @@ class PortfolioController extends Controller
             'settings' => SiteSetting::values(),
             'tags' => Tag::forPath(Tag::PATH_PHOTO)->ordered()->pluck('label'),
             'gear' => GearItem::ordered()->get(['category', 'value']),
-            'photos' => GalleryPhoto::published()->ordered()->get([
-                'id', 'title', 'caption', 'category', 'image_path',
-            ]),
+            // Eager load media so the grid doesn't fire a query per tile.
+            'photos' => GalleryPhoto::published()->ordered()->with('media')->get()
+                ->map(fn (GalleryPhoto $photo) => [
+                    'id' => $photo->id,
+                    'title' => $photo->title,
+                    'caption' => $photo->caption,
+                    'category' => $photo->category,
+                    'thumb_url' => $photo->thumb_url,
+                    'image_url' => $photo->image_url,
+                ]),
             // Only categories that actually have photos become filter buttons —
             // an empty filter would look broken.
             'categories' => GalleryPhoto::published()
