@@ -156,7 +156,12 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                 </Reveal>
             </Section>
 
-            <ContactSection lead={settings.photo_contact_lead} links={contactLinks} theme={theme} />
+            <ContactSection
+                lead={settings.photo_contact_lead}
+                links={contactLinks}
+                theme={theme}
+                path="photo"
+            />
         </div>
     );
 }

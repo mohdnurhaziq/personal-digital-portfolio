@@ -92,9 +92,18 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
 ## Phase 5 — Contact form & integrations
 
-- [ ] Contact form backend (Laravel Mail or a transactional email service)
-- [ ] Basic spam protection (honeypot field or rate limiting)
-- [ ] Wire up the real LinkedIn/GitHub/Instagram links
+- [x] Contact form backend — form on both paths, sent with Laravel Mail to whatever `contact_email` is set to in site settings. Reply-To is the sender, so hitting reply just works.
+- [x] **Messages are stored as well as emailed.** For a job-hunting site, losing an enquiry because SMTP was misconfigured is the worst failure mode, so the DB copy is the safety net and a mail failure is logged rather than shown to the sender. Read-only inbox at `/admin/messages`.
+- [x] Spam protection — honeypot field (hidden from people and assistive tech, `prohibited` server-side) plus `throttle:5,1` on the route, so a bot that works out the trap still cannot flood the inbox.
+- [x] Wire up the real LinkedIn/GitHub/Instagram links — editable in the admin under Contact links, per path. Still holding placeholder `#` URLs until real ones are supplied.
+
+Messages record which path they came from, since a booking request reads differently to a job enquiry.
+
+**Verified in a browser:** empty submit shows per-field errors; a real send confirms, clears the fields and moves focus to the confirmation; both messages landed in the DB with the right path and were written to the log mailer; the inbox lists them newest-first and delete works.
+
+**Bug caught only by clicking:** the fields did not clear after a successful send — it read as "nothing happened". `wasSuccessful` in a `useEffect` did not fire reliably; moving the reset into `post()`'s `onSuccess` callback fixed it.
+
+**Tests no longer depend on a stray SSR process.** `INERTIA_SSR_ENABLED=false` is now set in `phpunit.xml`. Before that, an assertion passed or failed depending on whether a dev SSR server happened to be running with a current bundle.
 
 ## Phase 6 — Polish & launch
 

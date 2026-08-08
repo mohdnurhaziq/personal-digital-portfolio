@@ -51,6 +51,7 @@ export default function AdminLayout({ title, actions, children }) {
                         {(adminNav ?? []).map((item) =>
                             navItem(`/admin/${item.key}`, item.label),
                         )}
+                        {navItem('/admin/messages', 'Messages')}
                         {navItem('/admin/settings', 'Site settings')}
                     </nav>
 

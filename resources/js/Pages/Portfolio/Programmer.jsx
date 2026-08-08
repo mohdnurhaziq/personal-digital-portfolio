@@ -232,7 +232,12 @@ function Programmer({
                 </div>
             </Section>
 
-            <ContactSection lead={settings.dev_contact_lead} links={contactLinks} theme={theme} />
+            <ContactSection
+                lead={settings.dev_contact_lead}
+                links={contactLinks}
+                theme={theme}
+                path="dev"
+            />
         </div>
     );
 }

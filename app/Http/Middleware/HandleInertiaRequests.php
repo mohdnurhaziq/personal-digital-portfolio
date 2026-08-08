@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
                 ])
                 ->values() : null,
             'status' => fn () => $request->session()->get('status'),
+            'contact' => fn () => $request->session()->get('contact'),
         ];
     }
 }

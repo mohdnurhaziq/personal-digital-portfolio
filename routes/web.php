@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\MessagesController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +16,12 @@ Route::get('/', [PortfolioController::class, 'welcome'])->name('welcome');
 Route::get('/programmer', [PortfolioController::class, 'programmer'])->name('programmer');
 Route::get('/photographer', [PortfolioController::class, 'photographer'])->name('photographer');
 
+// Rate limited as the second line of spam defence behind the honeypot: a bot
+// that works out the trap still cannot flood the inbox.
+Route::post('/contact', [ContactController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
+
 // Owner-only content management. Everything here is behind auth; there is no
 // public registration, so the only account is the seeded one.
 Route::middleware('auth')
@@ -21,6 +29,10 @@ Route::middleware('auth')
     ->name('admin.')
     ->group(function () {
         Route::get('/', DashboardController::class)->name('dashboard');
+
+        // Read-only: messages arrive by email, this is the durable copy.
+        Route::get('messages', [MessagesController::class, 'index'])->name('messages.index');
+        Route::delete('messages/{message}', [MessagesController::class, 'destroy'])->name('messages.destroy');
 
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
