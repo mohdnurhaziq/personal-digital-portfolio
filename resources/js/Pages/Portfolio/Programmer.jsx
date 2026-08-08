@@ -1,4 +1,5 @@
 import { Head } from '@inertiajs/react';
+import { useEffect } from 'react';
 import Card from '@/Components/Portfolio/Card';
 import ContactSection from '@/Components/Portfolio/ContactSection';
 import PageHero from '@/Components/Portfolio/PageHero';
@@ -8,10 +9,11 @@ import Section from '@/Components/Portfolio/Section';
 import StackIcon from '@/Components/Portfolio/StackIcon';
 import TagRow from '@/Components/Portfolio/TagRow';
 import { themeFor } from '@/Components/Portfolio/theme';
+import PortfolioLayout, { usePortfolio } from '@/Layouts/PortfolioLayout';
 
 const theme = themeFor('dev');
 
-export default function Programmer({
+function Programmer({
     settings,
     tags,
     techStacks,
@@ -21,13 +23,27 @@ export default function Programmer({
     certifications,
     contactLinks,
 }) {
+    const { navigate, setCursorTheme, setSceneVisible } = usePortfolio();
+
+    useEffect(() => {
+        setCursorTheme('dev');
+        // The navy page is translucent over the field, so the scene keeps
+        // running here and dollies with the scroll.
+        setSceneVisible(true);
+    }, [setCursorTheme, setSceneVisible]);
+
     return (
         <div className={`min-h-screen pb-25 ${theme.page}`}>
             <Head title="Programmer & project manager">
                 <meta name="description" content={settings.dev_intro} />
             </Head>
 
-            <PageNav brand={settings.brand_short} mode="WEEKDAY MODE" theme={theme} />
+            <PageNav
+                brand={settings.brand_short}
+                mode="WEEKDAY MODE"
+                theme={theme}
+                onBack={() => navigate('/', { kind: 'matrix' })}
+            />
 
             <PageHero
                 kicker={settings.dev_kicker}
@@ -218,3 +234,7 @@ export default function Programmer({
         </div>
     );
 }
+
+Programmer.layout = (page) => <PortfolioLayout>{page}</PortfolioLayout>;
+
+export default Programmer;

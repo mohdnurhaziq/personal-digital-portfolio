@@ -184,6 +184,72 @@
     }
 }
 
+/* Terminal-style blink on the programmer cursor ring. The photographer ring
+   deliberately stays static, like a camera's AF box. */
+@keyframes cursorPulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.35;
+    }
+}
+
+/* Drifting polaroids behind the photographer half of the fork. Four separate
+   paths so they never move in visible lockstep. */
+@keyframes flyA {
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(-6deg);
+    }
+    25% {
+        transform: translate(28px, -38px) rotate(4deg);
+    }
+    50% {
+        transform: translate(56px, 8px) rotate(-3deg);
+    }
+    75% {
+        transform: translate(18px, 46px) rotate(6deg);
+    }
+}
+
+@keyframes flyB {
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(8deg);
+    }
+    33% {
+        transform: translate(-38px, 18px) rotate(-5deg);
+    }
+    66% {
+        transform: translate(-14px, -32px) rotate(10deg);
+    }
+}
+
+@keyframes flyC {
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(-4deg);
+    }
+    50% {
+        transform: translate(-46px, -22px) rotate(5deg);
+    }
+}
+
+@keyframes flyD {
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(10deg);
+    }
+    40% {
+        transform: translate(32px, 32px) rotate(-8deg);
+    }
+    80% {
+        transform: translate(-18px, 14px) rotate(3deg);
+    }
+}
+
 /* Anyone who asks for reduced motion gets the static site: no drifting
    polaroids, no reveal transitions, no 3D. Non-negotiable per portfolio-plan.md. */
 @media (prefers-reduced-motion: reduce) {

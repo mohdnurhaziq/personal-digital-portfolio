@@ -50,11 +50,11 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 ## Phase 3 — Public pages (port the static preview into real components)
 
 - [x] Welcome screen (stats + bio pulled from `site_settings`) — with the Continue crossfade into the fork
-- [~] Fork screen — hover dimming works; ambient digit rain, flying polaroids, and per-path cursor theming still to do (they belong with the 3D work below)
-- [ ] Three.js background scene as a React Three Fiber component
+- [x] Fork screen — hover dimming, ambient digit rain, flying polaroids, per-path cursor theming (blue pulsing ring / static gold viewfinder brackets)
+- [x] Three.js background scene as a React Three Fiber component — lazy-loaded, so `three` sits in its own 892 kB chunk instead of the 305 kB entry
 - [x] Programmer page: Tech stack, Projects, Experience, About, Testimonials, Certifications, Contact — all from the DB
 - [x] Photographer page: Gear, Gallery with working category filters, About, Bookings, Contact — all from the DB
-- [ ] Aperture blade-wipe and matrix-rain transitions, ported to React
+- [x] Aperture blade-wipe and matrix-rain transitions, ported to React — they now play *over a real Inertia route change*, via a persistent `PortfolioLayout` that survives navigation. That is what keeps the cinematic feel without giving up shareable URLs.
 - [x] Real routing (`/`, `/programmer`, `/photographer`) so links are shareable
 - [ ] Mobile pass — actually test on a real phone this time, not just responsive CSS guesses
 - [~] Accessibility pass: `prefers-reduced-motion` honoured (reveals skip straight to visible), visible `:focus-visible` ring, gallery filters are a labelled radiogroup, fork halves leave the tab order until revealed. Still needs a real screen-reader/keyboard run-through.

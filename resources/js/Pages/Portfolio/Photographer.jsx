@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Card from '@/Components/Portfolio/Card';
 import ContactSection from '@/Components/Portfolio/ContactSection';
 import PageHero from '@/Components/Portfolio/PageHero';
@@ -8,20 +8,22 @@ import Reveal from '@/Components/Portfolio/Reveal';
 import Section from '@/Components/Portfolio/Section';
 import TagRow from '@/Components/Portfolio/TagRow';
 import { themeFor } from '@/Components/Portfolio/theme';
+import PortfolioLayout, { usePortfolio } from '@/Layouts/PortfolioLayout';
 
 const theme = themeFor('photo');
 
 const label = (category) => category.charAt(0).toUpperCase() + category.slice(1);
 
-export default function Photographer({
-    settings,
-    tags,
-    gear,
-    photos,
-    categories,
-    contactLinks,
-}) {
+function Photographer({ settings, tags, gear, photos, categories, contactLinks }) {
     const [active, setActive] = useState('all');
+    const { navigate, setCursorTheme, setSceneVisible } = usePortfolio();
+
+    useEffect(() => {
+        setCursorTheme('photo');
+        // This path runs on an opaque cream ground, so the navy 3D field would
+        // never be seen — no reason to keep rendering it.
+        setSceneVisible(false);
+    }, [setCursorTheme, setSceneVisible]);
 
     const visible = useMemo(
         () => (active === 'all' ? photos : photos.filter((photo) => photo.category === active)),
@@ -34,7 +36,17 @@ export default function Photographer({
                 <meta name="description" content={settings.photo_intro} />
             </Head>
 
-            <PageNav brand={settings.brand_short} mode="WEEKEND MODE" theme={theme} />
+            <PageNav
+                brand={settings.brand_short}
+                mode="WEEKEND MODE"
+                theme={theme}
+                onBack={(event) =>
+                    navigate('/', {
+                        kind: 'aperture',
+                        origin: { x: event.clientX, y: event.clientY },
+                    })
+                }
+            />
 
             <PageHero
                 kicker={settings.photo_kicker}
@@ -150,3 +162,7 @@ export default function Photographer({
         </div>
     );
 }
+
+Photographer.layout = (page) => <PortfolioLayout>{page}</PortfolioLayout>;
+
+export default Photographer;

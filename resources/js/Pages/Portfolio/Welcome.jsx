@@ -1,14 +1,28 @@
-import { Head, Link } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import HeroPolaroids from '@/Components/Portfolio/HeroPolaroids';
+import HeroRain from '@/Components/Portfolio/HeroRain';
+import PortfolioLayout, { usePortfolio } from '@/Layouts/PortfolioLayout';
 
 /**
  * Landing screen. The welcome panel shows first and crossfades into the
  * Programmer/Photographer fork on Continue — deliberately a button, not a
  * scroll, per portfolio-plan.md.
  */
-export default function Welcome({ settings, stats }) {
+function Welcome({ settings, stats }) {
     const [showFork, setShowFork] = useState(false);
     const [hovered, setHovered] = useState(null);
+    const { navigate, setCursorTheme, setSceneVisible } = usePortfolio();
+
+    // The 3D field sits behind the welcome panel, but the fork's two halves are
+    // opaque, so keeping it running underneath them would just burn frames.
+    useEffect(() => {
+        setSceneVisible(!showFork);
+    }, [showFork, setSceneVisible]);
+
+    useEffect(() => {
+        setCursorTheme(hovered === 'photo' ? 'photo' : 'dev');
+    }, [hovered, setCursorTheme]);
 
     return (
         <>
@@ -16,7 +30,7 @@ export default function Welcome({ settings, stats }) {
                 <meta name="description" content={settings.meta_description} />
             </Head>
 
-            <main className="relative min-h-screen overflow-hidden bg-base">
+            <main className="relative min-h-screen overflow-hidden">
                 {/* Welcome */}
                 <section
                     className={`absolute inset-0 z-12 flex flex-col items-center justify-center px-10 text-center transition-all duration-700 ${
@@ -101,8 +115,10 @@ export default function Welcome({ settings, stats }) {
                         dimmed={hovered !== null && hovered !== 'dev'}
                         onHover={() => setHovered('dev')}
                         onLeave={() => setHovered(null)}
+                        onActivate={() => navigate('/programmer', { kind: 'matrix' })}
                         className="border-border bg-base text-fg sm:border-r"
                         accent="text-dev-bright"
+                        ambient={<HeroRain active={showFork} />}
                         icon={
                             <path
                                 d="M8 4L2 12l6 8M16 4l6 8-6 8"
@@ -126,8 +142,17 @@ export default function Welcome({ settings, stats }) {
                         dimmed={hovered !== null && hovered !== 'photo'}
                         onHover={() => setHovered('photo')}
                         onLeave={() => setHovered(null)}
+                        // The aperture opens from wherever the visitor clicked,
+                        // which is what sells it as a camera shutter.
+                        onActivate={(event) =>
+                            navigate('/photographer', {
+                                kind: 'aperture',
+                                origin: { x: event.clientX, y: event.clientY },
+                            })
+                        }
                         className="bg-cream text-ink"
                         accent="text-photo-deep"
+                        ambient={<HeroPolaroids />}
                         icon={
                             <>
                                 <path
@@ -155,11 +180,13 @@ function ForkHalf({
     className,
     dimmed,
     tabbable,
+    ambient,
     onHover,
     onLeave,
+    onActivate,
 }) {
     return (
-        <Link
+        <a
             href={href}
             // Until the fork is revealed it sits behind the welcome panel, so it
             // must stay out of the tab order.
@@ -168,10 +195,18 @@ function ForkHalf({
             onMouseLeave={onLeave}
             onFocus={onHover}
             onBlur={onLeave}
-            className={`flex flex-1 flex-col justify-end p-10 transition-opacity duration-300 sm:p-15 ${className} ${
+            onClick={(event) => {
+                // Let modified clicks open a new tab like any normal link.
+                if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+                event.preventDefault();
+                onActivate(event);
+            }}
+            className={`relative isolate flex flex-1 flex-col justify-end overflow-hidden p-10 transition-opacity duration-300 sm:p-15 ${className} ${
                 dimmed ? 'opacity-55' : 'opacity-100'
             }`}
         >
+            {ambient}
+
             <svg
                 viewBox="0 0 24 24"
                 className={`mb-5 size-10.5 stroke-current ${accent}`}
@@ -185,6 +220,10 @@ function ForkHalf({
             <p className="mt-4 max-w-[380px] opacity-70">{tagline}</p>
 
             <span className={`mt-6 font-mono text-xs tracking-[0.05em] ${accent}`}>ENTER &rarr;</span>
-        </Link>
+        </a>
     );
 }
+
+Welcome.layout = (page) => <PortfolioLayout>{page}</PortfolioLayout>;
+
+export default Welcome;
