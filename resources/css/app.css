@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+/* Self-hosted so the site never depends on an external font CDN at runtime. */
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
+@plugin '@tailwindcss/forms';
+
+/* Tailwind v4 is CSS-first: tokens live here, not in tailwind.config.js.
+   Palette is locked in portfolio-plan.md — shared cool base, with the two
+   identities separated by accent (programmer blue vs photographer gold). */
+@theme {
+    /* Shared base */
+    --color-base: #070b14;
+    --color-base-raised: #0d1420;
+    --color-base-border: #1b2534;
+    --color-ink: #f5f7fa;
+    --color-ink-muted: #9aa7bd;
+
+    /* Programmer (weekday) identity */
+    --color-dev: #5b8def;
+    --color-dev-bright: #8fb4ff;
+
+    /* Photographer (weekend) identity */
+    --color-photo: #d4af37;
+    --color-photo-bright: #f0c36b;
+
+    /* Type scale */
+    --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-base);
+        color: var(--color-ink);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* The site hides the native cursor in favour of a custom one; keyboard users
+       still need a visible focus ring (accessibility pass in the todo). */
+    :focus-visible {
+        outline: 2px solid var(--color-dev-bright);
+        outline-offset: 2px;
+    }
+}
+
+/* Anyone who asks for reduced motion gets the static site: no 3D, no transitions.
+   Non-negotiable per portfolio-plan.md. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
