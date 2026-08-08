@@ -105,6 +105,20 @@ Messages record which path they came from, since a booking request reads differe
 
 **Tests no longer depend on a stray SSR process.** `INERTIA_SSR_ENABLED=false` is now set in `phpunit.xml`. Before that, an assertion passed or failed depending on whether a dev SSR server happened to be running with a current bundle.
 
+## Docker
+
+Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot reload) and a `prod` target (assets baked in, nginx + php-fpm + the SSR renderer under supervisor). MySQL 8.4 in both. See `README.md` for commands.
+
+**No SSR service in the dev stack, deliberately.** While Vite is serving hot assets, Inertia switches to a hot SSR URL that is not configured, so the renderer would sit idle while every page silently fell back to client rendering. Use `docker-compose.prod.yml` to exercise SSR.
+
+**Verification status — partly unverified.** The host disk filled up mid-way (135 MB free of 228 GB), which left Docker's content store throwing I/O errors on every command, so the work could not be finished:
+
+- Verified: both compose files validate; the `base` and `dev` images build; PHP extensions (gd, pdo_mysql, zip, intl, exif) install; MySQL comes up healthy; the entrypoint's wait-for-database works (`Waiting for database at db:3306... ready`).
+- Found and fixed, **not yet re-verified**: the `dev` stage installed no dependencies, so the anonymous `vendor`/`node_modules` volumes masked empty directories — `artisan` died on a missing autoloader and `vite` was not found. The stage now runs `composer install` (with the autoloader) and `npm ci`.
+- Not exercised at all: the `prod` target — nginx, supervisor, and the SSR renderer in a container.
+
+Next session: free disk space, then `docker compose up --build` and `docker compose -f docker-compose.prod.yml up --build`, and check SSR really renders with `curl -s localhost:8080/programmer | grep -c '<h1'`.
+
 ## Phase 6 — Polish & launch
 
 - [ ] Cross-browser check

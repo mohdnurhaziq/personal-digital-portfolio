@@ -1,0 +1,75 @@
+# Local development. Code is bind-mounted, so edits are picked up without a
+# rebuild, and Vite serves assets with hot reload.
+#
+# Note there is deliberately no SSR service here: Inertia switches to a hot SSR
+# URL whenever Vite is running, so an SSR process would sit idle while every
+# page quietly fell back to client rendering. Use docker-compose.prod.yml to
+# exercise SSR.
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - .:/var/www/html
+      # Keep the container's installed dependencies rather than letting an
+      # empty or macOS-built host directory shadow them.
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
+    ports:
+      - '${APP_PORT:-8000}:8000'
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-portfolio}
+      DB_USERNAME: ${DB_USERNAME:-portfolio}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      APP_URL: http://localhost:${APP_PORT:-8000}
+      VITE_DEV_SERVER_URL: http://localhost:${VITE_PORT:-5173}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  vite:
+    build:
+      context: .
+      target: dev
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/node_modules
+    ports:
+      - '${VITE_PORT:-5173}:5173'
+    # Vite binds to localhost by default, which is unreachable from outside the
+    # container.
+    command: npm run dev -- --host 0.0.0.0
+    entrypoint: []
+
+  db:
+    image: mysql:8.4
+    ports:
+      - '${DB_PORT_HOST:-3306}:3306'
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-portfolio}
+      MYSQL_USER: ${DB_USERNAME:-portfolio}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      # The app waits on this, so a cold `up` doesn't race the database.
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-secret}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  db-data:

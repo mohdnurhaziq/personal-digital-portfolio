@@ -1,58 +1,103 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Personal portfolio — Mohd. Nur Haziq Irsyamuddin
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Programmer on the weekdays, photographer on the weekends. A single-page fork
+into two themed paths, backed by an owner-only CMS so the content can change
+without a deploy.
 
-## About Laravel
+**Stack:** Laravel 13 · Inertia v3 · React 19 · Tailwind v4 · React Three Fiber
+· Spatie Media Library · MySQL
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- `design/` — the static HTML previews this was ported from; still the visual
+  reference.
+- `portfolio-plan.md` — design rationale and decisions.
+- `development-todo.md` — build checklist and what is left.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Running it with Docker
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+cp .env.example .env
+docker compose up --build
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Then:
 
-## Contributing
+| URL | What |
+| --- | --- |
+| http://localhost:8000 | The site |
+| http://localhost:8000/admin | The CMS (log in first) |
+| http://localhost:5173 | Vite dev server (assets, hot reload) |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+The database is created and migrated on boot. To load the placeholder content
+and create the owner account:
 
-## Code of Conduct
+```bash
+docker compose exec app php artisan db:seed
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+`ADMIN_PASSWORD` must be set in `.env` first — the seeder deliberately skips
+creating the account when it is empty, so a deploy can never fall back to a
+guessable credential.
 
-## Security Vulnerabilities
+### Everyday commands
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose exec app php artisan test
+docker compose exec app php artisan migrate
+docker compose exec app vendor/bin/pint
+docker compose exec app bash
+```
 
-## License
+### Server-side rendering
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The dev stack **does not** run the SSR renderer, and that is deliberate: while
+Vite is serving hot assets, Inertia switches to a hot SSR URL that is not
+configured, so an SSR process would sit idle while every page quietly fell back
+to client rendering. Nothing is logged when this happens — the page just comes
+back with an empty `<div id="app">`.
+
+To exercise SSR, run the production stack, which serves prebuilt assets and runs
+the renderer under supervisor:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+# http://localhost:8080
+```
+
+Confirm it is actually rendering rather than silently falling back:
+
+```bash
+curl -s http://localhost:8080/programmer | grep -c '<h1'
+```
+
+A `1` means the HTML really contains the heading. A `0` means SSR fell back and
+only the JSON payload is being served.
+
+## Configuration worth getting right
+
+| Variable | Why it matters |
+| --- | --- |
+| `APP_URL` | Media Library builds **absolute** URLs from it. If it does not match how the site is served, every uploaded image 404s. |
+| `APP_NAME` | Appears in every page title, e.g. "Photography — {APP_NAME}". |
+| `ADMIN_PASSWORD` | The seeder skips creating the owner account when unset. No default on purpose. |
+| `MAIL_MAILER` | Defaults to `log`, so contact messages are written to the log rather than sent. Set real credentials before launch. |
+
+Contact messages are stored as well as emailed, and readable at
+`/admin/messages` — losing an enquiry to a misconfigured mailer is the worst
+failure mode for a job-hunting site.
+
+## Running it without Docker
+
+Needs PHP 8.3+, Composer and Node 22+.
+
+```bash
+composer install
+npm install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+npm run dev          # separate terminal
+php artisan serve
+```
+
+> On a machine with a leftover Herd install, the stale shims on `PATH` break
+> bare `php`/`composer`. Put Homebrew first: `export PATH=/opt/homebrew/bin:$PATH`.
