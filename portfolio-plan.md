@@ -64,14 +64,16 @@ See `design-preview-3d.html` — open it in a browser, it's a real working demo 
 
 ## Tech stack
 
-- Laravel 11 (backend, routing, mail for contact form)
-- Inertia.js + React 18 (SPA feel without a separate API)
-- **React Three Fiber + drei** (Three.js scene as React components — this is what the preview's raw Three.js code becomes in the real build)
-- **GSAP + ScrollTrigger** (scroll-driven camera/timeline choreography — more control than CSS alone for this much motion)
-- Tailwind CSS (styling)
+- Laravel 13 (backend, routing, mail for contact form) — requires PHP 8.3+
+- Inertia.js v3 + React 19 (SPA feel without a separate API) — v3 replaces Axios with a built-in HTTP client and adds SSR out of the box in dev; different enough from v2 that older Inertia tutorials won't directly apply
+- **React Three Fiber v9 + drei** (Three.js scene as React components — this is what the preview's raw Three.js code becomes in the real build) — v9 pairs with React 19
+- **GSAP + ScrollTrigger** (scroll-driven camera/timeline choreography — more control than CSS alone for this much motion) — 100% free as of 2025, including plugins that used to require a paid Club GreenSock membership
+- Tailwind CSS v4 (styling) — v4 dropped `tailwind.config.js` in favor of CSS-first configuration, different workflow from v3
 - Ziggy (use Laravel routes in React)
-- **Laravel Breeze (Inertia + React stack)** — auth scaffolding (login/logout, password reset) for a single admin account (you)
+- **Laravel Breeze (Inertia + React stack)** — auth scaffolding (login/logout, password reset) for a single admin account (you); supports Laravel 11–13
 - **Spatie Laravel Media Library** — handles photo/resume uploads, auto-generates resized thumbnails for the gallery grid and polaroid animations
+
+All of the above are pulled at their latest versions automatically by `composer create-project`/`npm install` — nothing here needs to be manually pinned. Checked current versions on 2026-08-08.
 
 ## Update: admin login to manage content dynamically
 
