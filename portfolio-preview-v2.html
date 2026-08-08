@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Portfolio preview v2 — black & gold, cinematic fork</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #070706;
+    --panel: #111110;
+    --panel-glass: rgba(17,17,16,0.55);
+    --gold: #D4AF37;
+    --gold-bright: #F4D06F;
+    --text: #F1ECDD;
+    --text-dim: #8a8577;
+    --border: #2a271f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; height: 100%; }
+  body.scrollable { overflow: auto; height: auto; }
+  @media (pointer: fine) { body { cursor: none; } }
+
+  #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+  #loader {
+    position: fixed; inset: 0; z-index: 300; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+  #loader .pct { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--gold); letter-spacing: 0.1em; }
+  #loader .bar { width: 220px; height: 1px; background: var(--border); margin-top: 18px; overflow: hidden; }
+  #loader .bar-fill { width: 0%; height: 100%; background: var(--gold); }
+
+  #cursor-dot, #cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 250; pointer-events: none; border-radius: 50%;
+    transform: translate(-50%, -50%); mix-blend-mode: difference;
+  }
+  #cursor-dot { width: 6px; height: 6px; background: var(--gold-bright); }
+  #cursor-ring { width: 32px; height: 32px; border: 1px solid var(--text); transition: width 0.25s, height 0.25s, border-color 0.25s; }
+  #cursor-ring.hovering { width: 60px; height: 60px; border-color: var(--gold); }
+  @media (pointer: coarse) { #cursor-dot, #cursor-ring { display: none; } }
+
+  .note {
+    position: fixed; bottom: 16px; right: 16px; z-index: 260;
+    background: rgba(17,17,16,0.9); color: var(--gold);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 8px 14px;
+    border-radius: 4px; border: 1px solid var(--border);
+  }
+
+  #iris {
+    position: fixed; inset: 0; z-index: 200; background: var(--bg);
+    clip-path: circle(0px at 50% 50%); pointer-events: none;
+  }
+
+  /* ============ FORK (hero) ============ */
+  #fork { position: fixed; inset: 0; z-index: 10; display: flex; }
+  #fork.hidden { display: none; }
+  .fork-brand {
+    position: absolute; top: 32px; left: 48px; z-index: 20;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; letter-spacing: 0.1em; color: var(--text);
+  }
+  .fork-kicker {
+    position: absolute; top: 32px; right: 48px; z-index: 20;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: var(--text-dim);
+  }
+  .fork-half {
+    flex: 1; position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 60px; cursor: none; transition: flex 0.5s cubic-bezier(.22,1,.36,1), background 0.4s ease;
+    background: var(--panel-glass);
+  }
+  .fork-half.dimmed { background: rgba(7,7,6,0.78); }
+  .fork-half:not(:last-child) { border-right: 1px solid var(--border); }
+  .fork-icon { width: 42px; height: 42px; stroke: var(--gold); fill: none; stroke-width: 1.4; margin-bottom: 20px; }
+  .fork-half h2 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(30px, 4.5vw, 50px); }
+  .fork-tagline { font-size: 16px; color: var(--text-dim); margin-top: 16px; max-width: 380px; }
+  .fork-tagline .g { color: var(--gold-bright); }
+  .fork-cta { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold); margin-top: 24px; letter-spacing: 0.05em; }
+
+  /* ============ PAGES ============ */
+  .page { display: none; position: relative; z-index: 5; min-height: 100vh; padding-bottom: 100px; }
+  .page.active { display: block; }
+  .page-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 48px; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  }
+  .page-back { color: var(--gold); cursor: none; }
+  .page-hero { padding: 60px 48px 40px; }
+  .page-kicker { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
+  .page-hero h1 { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(34px, 6vw, 64px); }
+  .page-hero p { color: var(--text-dim); max-width: 520px; margin-top: 16px; line-height: 1.6; }
+
+  .section { padding: 60px 48px; }
+  .section-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 26px; margin-bottom: 32px; }
+
+  .tag-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 60px; }
+  .tag { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold-bright); border: 1px solid var(--border); padding: 6px 14px; border-radius: 999px; }
+
+  .grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+  .card {
+    background: var(--panel-glass); backdrop-filter: blur(6px); border: 1px solid var(--border); border-radius: 10px;
+    padding: 30px; transition: border-color 0.3s ease, transform 0.15s ease; transform-style: preserve-3d;
+  }
+  .card:hover { border-color: var(--gold); }
+  .card-big { grid-column: span 4; min-height: 260px; }
+  .card-small { grid-column: span 2; min-height: 260px; }
+  .card h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px; font-weight: 600; margin-bottom: 10px; color: var(--gold-bright); }
+  .card p { color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .photo {
+    aspect-ratio: 3/4; border-radius: 6px;
+    background: repeating-linear-gradient(45deg, #14130f 0px, #14130f 10px, #1c1a14 10px, #1c1a14 20px);
+    transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+  }
+  .photo:hover { transform: scale(1.03); }
+  .photo:nth-child(2), .photo:nth-child(6) { aspect-ratio: 4/3; }
+
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease, transform 0.8s ease; }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 720px) {
+    #fork { flex-direction: column; }
+    .card-big, .card-small { grid-column: span 6; }
+    .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="pct" id="loader-pct">LOADING 0%</div>
+  <div class="bar"><div class="bar-fill" id="loader-bar"></div></div>
+</div>
+
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+<div class="note">PREVIEW V2 — black &amp; gold, cinematic fork transition</div>
+
+<canvas id="bg-canvas"></canvas>
+<div id="iris"></div>
+
+<!-- FORK -->
+<div id="fork">
+  <div class="fork-brand">ZIQ</div>
+  <div class="fork-kicker">Portfolio — 2026</div>
+
+  <div class="fork-half hoverable" id="fork-dev">
+    <svg class="fork-icon" viewBox="0 0 24 24"><path d="M8 4L2 12l6 8M16 4l6 8-6 8"/></svg>
+    <h2>Programmer</h2>
+    <div class="fork-tagline">Programmer on the <span class="g">weekdays</span>,</div>
+    <div class="fork-cta">ENTER &rarr;</div>
+  </div>
+
+  <div class="fork-half hoverable" id="fork-photo">
+    <svg class="fork-icon" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v12H4V8z"/><circle cx="12" cy="14" r="3.5"/></svg>
+    <h2>Photographer</h2>
+    <div class="fork-tagline">photographer on the <span class="g">weekends</span>.</div>
+    <div class="fork-cta">ENTER &rarr;</div>
+  </div>
+</div>
+
+<!-- WEEKDAY PAGE -->
+<div class="page" id="page-dev">
+  <div class="page-nav">
+    <span>ZIQ / WEEKDAY MODE</span>
+    <span class="page-back hoverable" onclick="goBack(event)">&larr; back to start</span>
+  </div>
+  <div class="page-hero">
+    <div class="page-kicker">Weekdays</div>
+    <h1>Programmer &amp; project manager</h1>
+    <p>I build products end to end and run the teams delivering them. Here's the skills and projects side of the split.</p>
+  </div>
+  <div class="section">
+    <div class="tag-row reveal">
+      <span class="tag">Laravel</span><span class="tag">React</span><span class="tag">Node.js</span>
+      <span class="tag">MySQL</span><span class="tag">Agile / Scrum</span><span class="tag">Jira</span><span class="tag">Stakeholder mgmt</span>
+    </div>
+    <div class="section-title reveal">Selected projects</div>
+    <div class="grid-6">
+      <div class="card card-big reveal hoverable"><h3>Project one</h3><p>Problem, your role, outcome. Link to repo/demo goes here.</p></div>
+      <div class="card card-small reveal hoverable"><h3>Project two</h3><p>Short description.</p></div>
+      <div class="card card-small reveal hoverable"><h3>Project three</h3><p>Short description.</p></div>
+      <div class="card card-big reveal hoverable"><h3>Project four</h3><p>Problem, your role, outcome.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- WEEKEND PAGE -->
+<div class="page" id="page-photo">
+  <div class="page-nav">
+    <span>ZIQ / WEEKEND MODE</span>
+    <span class="page-back hoverable" onclick="goBack(event)">&larr; back to start</span>
+  </div>
+  <div class="page-hero">
+    <div class="page-kicker">Weekends</div>
+    <h1>Photography</h1>
+    <p>Portraits and street work, shot on weekends. Gear list and a curated gallery below.</p>
+  </div>
+  <div class="section">
+    <div class="tag-row reveal">
+      <span class="tag">Sony A7IV</span><span class="tag">35mm f/1.4</span><span class="tag">85mm f/1.8</span>
+      <span class="tag">Lightroom</span><span class="tag">Portrait</span><span class="tag">Street</span>
+    </div>
+    <div class="section-title reveal">Gallery</div>
+    <div class="photo-grid">
+      <div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div>
+      <div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---------- loading ----------
+const loaderPct = document.getElementById('loader-pct');
+const loaderBar = document.getElementById('loader-bar');
+let pct = 0;
+const loadInterval = setInterval(() => {
+  pct += Math.random() * 18;
+  if (pct >= 100) {
+    pct = 100; clearInterval(loadInterval);
+    setTimeout(() => document.getElementById('loader').classList.add('done'), 250);
+  }
+  loaderPct.textContent = 'LOADING ' + Math.floor(pct) + '%';
+  loaderBar.style.width = pct + '%';
+}, 140);
+
+// ---------- custom cursor ----------
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = innerWidth/2, my = innerHeight/2, rx = mx, ry = my;
+window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; dot.style.left = mx+'px'; dot.style.top = my+'px'; });
+(function loop(){ rx += (mx-rx)*0.15; ry += (my-ry)*0.15; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
+function bindHoverables() {
+  document.querySelectorAll('.hoverable').forEach(el => {
+    el.onmouseenter = () => ring.classList.add('hovering');
+    el.onmouseleave = () => ring.classList.remove('hovering');
+  });
+}
+bindHoverables();
+
+// ---------- tilt cards ----------
+document.querySelectorAll('.card, .photo').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left)/r.width - 0.5, py = (e.clientY - r.top)/r.height - 0.5;
+    card.style.transform = `perspective(600px) rotateX(${py*-8}deg) rotateY(${px*8}deg) scale(1.01)`;
+  });
+  card.addEventListener('mouseleave', () => card.style.transform = 'perspective(600px) rotateX(0) rotateY(0) scale(1)');
+});
+
+// ---------- scroll reveal ----------
+const io = new IntersectionObserver(entries => entries.forEach(en => en.isIntersecting && en.target.classList.add('in-view')), { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ---------- fork hover dimming ----------
+const forkDev = document.getElementById('fork-dev');
+const forkPhoto = document.getElementById('fork-photo');
+forkDev.addEventListener('mouseenter', () => forkPhoto.classList.add('dimmed'));
+forkDev.addEventListener('mouseleave', () => forkPhoto.classList.remove('dimmed'));
+forkPhoto.addEventListener('mouseenter', () => forkDev.classList.add('dimmed'));
+forkPhoto.addEventListener('mouseleave', () => forkDev.classList.remove('dimmed'));
+
+// ---------- cinematic iris transition ----------
+const iris = document.getElementById('iris');
+function irisTransition(x, y, showId, toFork) {
+  iris.style.transition = 'none';
+  iris.style.clipPath = `circle(0px at ${x}px ${y}px)`;
+  void iris.offsetWidth;
+  iris.style.transition = 'clip-path 0.75s cubic-bezier(.76,0,.24,1)';
+  requestAnimationFrame(() => { iris.style.clipPath = `circle(150vmax at ${x}px ${y}px)`; });
+
+  setTimeout(() => {
+    document.getElementById('fork').classList.toggle('hidden', !toFork);
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    if (showId) document.getElementById(showId).classList.add('active');
+    document.body.classList.toggle('scrollable', !!showId);
+    window.scrollTo(0, 0);
+    bindHoverables();
+
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      iris.style.clipPath = `circle(0px at ${x}px ${y}px)`;
+    }));
+  }, 750);
+}
+forkDev.addEventListener('click', e => irisTransition(e.clientX, e.clientY, 'page-dev', false));
+forkPhoto.addEventListener('click', e => irisTransition(e.clientX, e.clientY, 'page-photo', false));
+function goBack(e) { irisTransition(e.clientX, e.clientY, null, true); }
+
+// ---------- three.js scene (black & gold) ----------
+const canvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x070706, 0.045);
+const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 0, 8);
+
+const particleCount = 1800;
+const positions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  const r = 14 * Math.cbrt(Math.random());
+  const theta = Math.random()*Math.PI*2, phi = Math.acos(Math.random()*2-1);
+  positions[i*3] = r*Math.sin(phi)*Math.cos(theta);
+  positions[i*3+1] = r*Math.sin(phi)*Math.sin(theta);
+  positions[i*3+2] = r*Math.cos(phi);
+}
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const particleMat = new THREE.PointsMaterial({ color: 0xD4AF37, size: 0.035, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+const noiseGLSL = `
+vec3 mod289(vec3 x){return x - floor(x * (1.0/289.0)) * 289.0;}
+vec4 mod289(vec4 x){return x - floor(x * (1.0/289.0)) * 289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+            i.z + vec4(0.0, i1.z, i2.z, 1.0))
+          + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+          + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}`;
+
+const coreGeo = new THREE.IcosahedronGeometry(1.7, 24);
+const coreMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: noiseGLSL + `
+    uniform float uTime;
+    varying vec3 vViewNormal;
+    void main() {
+      float n = snoise(position * 1.1 + uTime * 0.25);
+      vec3 displaced = position + normal * n * 0.28;
+      vViewNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+    }`,
+  fragmentShader: `
+    varying vec3 vViewNormal;
+    void main() {
+      float fresnel = pow(1.0 - max(dot(normalize(vViewNormal), vec3(0.0,0.0,1.0)), 0.0), 2.2);
+      vec3 colorA = vec3(0.03, 0.03, 0.028);
+      vec3 colorB = vec3(0.831, 0.686, 0.216);
+      gl_FragColor = vec4(mix(colorA, colorB, fresnel), 1.0);
+    }`
+});
+const core = new THREE.Mesh(coreGeo, coreMat);
+scene.add(core);
+
+const wireGeo = new THREE.IcosahedronGeometry(2.6, 1);
+const wireMat = new THREE.MeshBasicMaterial({ color: 0xD4AF37, wireframe: true, transparent: true, opacity: 0.12 });
+const wire = new THREE.Mesh(wireGeo, wireMat);
+scene.add(wire);
+
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', e => { mouseX = (e.clientX/innerWidth)*2-1; mouseY = (e.clientY/innerHeight)*2-1; });
+
+function scrollProgress() {
+  const h = document.documentElement.scrollHeight - innerHeight;
+  return h > 0 ? scrollY / h : 0;
+}
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const sp = scrollProgress();
+  coreMat.uniforms.uTime.value = t;
+  core.rotation.y = t*0.15 + sp*Math.PI*1.5;
+  core.rotation.x = sp*Math.PI*0.4;
+  wire.rotation.y = -t*0.08;
+  wire.rotation.x = t*0.05;
+  particles.rotation.y = t*0.02 + sp*0.6;
+  camera.position.z = 8 - sp*4.5;
+  camera.position.x += (mouseX*0.6 - camera.position.x)*0.04;
+  camera.position.y += (-mouseY*0.4 - camera.position.y)*0.04;
+  camera.lookAt(0,0,0);
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>

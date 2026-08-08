@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>3D portfolio concept preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: #0B0B0F;
+    color: #F5F3EE;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+  @media (pointer: fine) { body { cursor: none; } }
+
+  #bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* loading screen */
+  #loader {
+    position: fixed; inset: 0; z-index: 100;
+    background: #0B0B0F;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #loader.done { opacity: 0; visibility: hidden; pointer-events: none; }
+  #loader .pct {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: #FF5A3C;
+    letter-spacing: 0.1em;
+  }
+  #loader .bar {
+    width: 220px; height: 1px; background: #2A2A32; margin-top: 18px; overflow: hidden;
+  }
+  #loader .bar-fill { width: 0%; height: 100%; background: #FF5A3C; }
+
+  /* custom cursor */
+  #cursor-dot, #cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 90;
+    pointer-events: none;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    mix-blend-mode: difference;
+  }
+  #cursor-dot { width: 6px; height: 6px; background: #F5F3EE; }
+  #cursor-ring { width: 32px; height: 32px; border: 1px solid #F5F3EE; transition: width 0.25s, height 0.25s, border-color 0.25s; }
+  #cursor-ring.hovering { width: 56px; height: 56px; border-color: #FF5A3C; }
+  @media (pointer: coarse) { #cursor-dot, #cursor-ring { display: none; } }
+
+  .note {
+    position: fixed; bottom: 16px; right: 16px; z-index: 80;
+    background: rgba(26,26,32,0.85);
+    color: #C6FF3D;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    border: 1px solid #2A2A32;
+  }
+
+  .content { position: relative; z-index: 1; }
+
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 48px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em;
+    mix-blend-mode: difference;
+  }
+  .nav-links { display: flex; gap: 28px; }
+  .nav-links span { cursor: none; }
+
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 0 48px;
+  }
+  .hero-tag {
+    font-family: 'JetBrains Mono', monospace;
+    color: #FF5A3C; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 20px; opacity: 0; transform: translateY(16px);
+  }
+  .hero h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: clamp(48px, 9vw, 110px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 .line { overflow: hidden; display: block; }
+  .hero h1 .line span {
+    display: inline-block;
+    transform: translateY(110%);
+    opacity: 0;
+  }
+  .hero h1 .accent { color: #FF5A3C; }
+  .hero-pitch {
+    max-width: 520px; margin-top: 28px; font-size: 17px; line-height: 1.6; color: #b8b6b0;
+    opacity: 0; transform: translateY(16px);
+  }
+  .cta-row { display: flex; gap: 16px; margin-top: 40px; opacity: 0; transform: translateY(16px); }
+  .loaded .hero-tag, .loaded .hero-pitch, .loaded .cta-row {
+    opacity: 1; transform: translateY(0);
+    transition: opacity 0.9s ease, transform 0.9s ease;
+  }
+  .loaded .hero-tag { transition-delay: 0.15s; }
+  .loaded .cta-row { transition-delay: 0.55s; }
+  .loaded .hero-pitch { transition-delay: 0.4s; }
+  .loaded .hero h1 .line span { animation: rise 0.9s cubic-bezier(.22,1,.36,1) forwards; }
+  .loaded .hero h1 .line:nth-child(1) span { animation-delay: 0.05s; }
+  .loaded .hero h1 .line:nth-child(2) span { animation-delay: 0.15s; }
+  .loaded .hero h1 .line:nth-child(3) span { animation-delay: 0.25s; }
+  @keyframes rise { to { transform: translateY(0); opacity: 1; } }
+
+  .btn {
+    font-family: 'Inter', sans-serif; font-weight: 500; font-size: 14px;
+    padding: 15px 30px; border-radius: 4px; cursor: none;
+    transition: transform 0.15s ease;
+  }
+  .btn-primary { background: #FF5A3C; color: #0B0B0F; border: none; }
+  .btn-secondary { background: transparent; color: #F5F3EE; border: 1px solid #2A2A32; }
+
+  .section { padding: 140px 48px; }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #FF5A3C;
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .section-title {
+    font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800;
+    font-size: clamp(30px, 4vw, 46px); margin-bottom: 56px; max-width: 700px;
+  }
+
+  .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.9s ease, transform 0.9s ease; }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  .project-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 20px; }
+  .card {
+    background: rgba(22,22,27,0.7);
+    backdrop-filter: blur(6px);
+    border: 1px solid #2A2A32;
+    border-radius: 10px; padding: 30px;
+    transition: border-color 0.3s ease, transform 0.1s ease;
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+  .card:hover { border-color: #FF5A3C; }
+  .card-big { grid-column: span 4; min-height: 300px; }
+  .card-small { grid-column: span 2; min-height: 300px; }
+  .card-tags { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #C6FF3D;
+    border: 1px solid #2A2A32; padding: 4px 10px; border-radius: 999px;
+  }
+  .card h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; font-weight: 600; margin-bottom: 10px; }
+  .card p { color: #9a9a9a; font-size: 14px; line-height: 1.6; }
+
+  .photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .photo {
+    aspect-ratio: 3/4; border-radius: 6px;
+    background: repeating-linear-gradient(45deg, #1A1A20 0px, #1A1A20 10px, #202027 10px, #202027 20px);
+    transition: transform 0.4s cubic-bezier(.22,1,.36,1);
+  }
+  .photo:hover { transform: scale(1.03); }
+  .photo:nth-child(2), .photo:nth-child(6) { aspect-ratio: 4/3; }
+
+  @media (max-width: 720px) {
+    .card-big, .card-small { grid-column: span 6; }
+    .photo-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  footer {
+    position: relative; z-index: 1;
+    padding: 70px 48px; border-top: 1px solid #2A2A32;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #9a9a9a;
+  }
+  footer a { color: #F5F3EE; text-decoration: none; margin-left: 20px; cursor: none; }
+  footer a:hover { color: #FF5A3C; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="pct" id="loader-pct">LOADING 0%</div>
+  <div class="bar"><div class="bar-fill" id="loader-bar"></div></div>
+</div>
+
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+<div class="note">3D CONCEPT PREVIEW — placeholder content</div>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="content" id="content">
+  <nav class="nav">
+    <span>ZIQ</span>
+    <div class="nav-links">
+      <span class="hoverable">About</span><span class="hoverable">Skills</span><span class="hoverable">Projects</span><span class="hoverable">Photography</span><span class="hoverable">Contact</span>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-tag">Portfolio — 2026</div>
+    <h1>
+      <span class="line"><span>Build.</span></span>
+      <span class="line"><span>Manage.</span></span>
+      <span class="line"><span class="accent">Capture.</span></span>
+    </h1>
+    <p class="hero-pitch">I ship products, run the teams that build them, and shoot the moments in between. Scroll — this whole site is one continuous 3D space.</p>
+    <div class="cta-row">
+      <button class="btn btn-primary hoverable">View work</button>
+      <button class="btn btn-secondary hoverable">Get in touch</button>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-label reveal">Selected work</div>
+    <div class="section-title reveal">Projects that mix product thinking with hands-on build.</div>
+    <div class="project-grid">
+      <div class="card card-big reveal hoverable">
+        <div class="card-tags"><span class="tag">Laravel</span><span class="tag">React</span><span class="tag">PM</span></div>
+        <h3>Project title one</h3>
+        <p>Problem, your role, and the outcome. Link to repo/demo goes here.</p>
+      </div>
+      <div class="card card-small reveal hoverable">
+        <div class="card-tags"><span class="tag">Agile</span></div>
+        <h3>Project two</h3>
+        <p>Short description.</p>
+      </div>
+      <div class="card card-small reveal hoverable">
+        <div class="card-tags"><span class="tag">API</span></div>
+        <h3>Project three</h3>
+        <p>Short description.</p>
+      </div>
+      <div class="card card-big reveal hoverable">
+        <div class="card-tags"><span class="tag">Node</span><span class="tag">MySQL</span></div>
+        <h3>Project four</h3>
+        <p>Problem, your role, and the outcome.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-label reveal">Behind the lens</div>
+    <div class="section-title reveal">Photography</div>
+    <div class="photo-grid">
+      <div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div>
+      <div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div><div class="photo reveal hoverable"></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>&copy; 2026 Ziq. Built with Laravel + Inertia + React Three Fiber.</span>
+    <div>
+      <a href="#" class="hoverable">GitHub</a>
+      <a href="#" class="hoverable">LinkedIn</a>
+      <a href="#" class="hoverable">Instagram</a>
+      <a href="#" class="hoverable">Email</a>
+    </div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ---------- loading screen ----------
+const loaderPct = document.getElementById('loader-pct');
+const loaderBar = document.getElementById('loader-bar');
+let pct = 0;
+const loadInterval = setInterval(() => {
+  pct += Math.random() * 18;
+  if (pct >= 100) {
+    pct = 100;
+    clearInterval(loadInterval);
+    setTimeout(() => {
+      document.getElementById('loader').classList.add('done');
+      document.getElementById('content').classList.add('loaded');
+    }, 250);
+  }
+  loaderPct.textContent = 'LOADING ' + Math.floor(pct) + '%';
+  loaderBar.style.width = pct + '%';
+}, 140);
+
+// ---------- custom cursor ----------
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = window.innerWidth/2, my = window.innerHeight/2;
+let rx = mx, ry = my;
+window.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  dot.style.left = mx + 'px'; dot.style.top = my + 'px';
+});
+(function animateCursor(){
+  rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animateCursor);
+})();
+document.querySelectorAll('.hoverable').forEach(el => {
+  el.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+  el.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
+});
+
+// ---------- magnetic buttons ----------
+document.querySelectorAll('.btn').forEach(btn => {
+  btn.addEventListener('mousemove', e => {
+    const r = btn.getBoundingClientRect();
+    const relX = e.clientX - r.left - r.width/2;
+    const relY = e.clientY - r.top - r.height/2;
+    btn.style.transform = `translate(${relX*0.25}px, ${relY*0.35}px)`;
+  });
+  btn.addEventListener('mouseleave', () => btn.style.transform = 'translate(0,0)');
+});
+
+// ---------- tilt cards ----------
+document.querySelectorAll('.card, .photo').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    card.style.transform = `perspective(600px) rotateX(${py * -8}deg) rotateY(${px * 8}deg) scale(1.01)`;
+  });
+  card.addEventListener('mouseleave', () => card.style.transform = 'perspective(600px) rotateX(0) rotateY(0) scale(1)');
+});
+
+// ---------- scroll reveal ----------
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(en => { if (en.isIntersecting) en.target.classList.add('in-view'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+// ---------- three.js scene ----------
+const canvas = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0B0B0F, 0.045);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth/window.innerHeight, 0.1, 100);
+camera.position.set(0, 0, 8);
+
+// particle field
+const particleCount = 1800;
+const positions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  const r = 14 * Math.cbrt(Math.random());
+  const theta = Math.random() * Math.PI * 2;
+  const phi = Math.acos((Math.random() * 2) - 1);
+  positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+  positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+  positions[i*3+2] = r * Math.cos(phi);
+}
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const particleMat = new THREE.PointsMaterial({ color: 0xC6FF3D, size: 0.035, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+// organic core (noise-displaced icosahedron)
+const noiseGLSL = `
+vec3 mod289(vec3 x){return x - floor(x * (1.0/289.0)) * 289.0;}
+vec4 mod289(vec4 x){return x - floor(x * (1.0/289.0)) * 289.0;}
+vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+  i = mod289(i);
+  vec4 p = permute(permute(permute(
+            i.z + vec4(0.0, i1.z, i2.z, 1.0))
+          + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+          + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}`;
+
+const coreGeo = new THREE.IcosahedronGeometry(1.7, 24);
+const coreMat = new THREE.ShaderMaterial({
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: noiseGLSL + `
+    uniform float uTime;
+    varying vec3 vViewNormal;
+    void main() {
+      float n = snoise(position * 1.1 + uTime * 0.25);
+      vec3 displaced = position + normal * n * 0.28;
+      vViewNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(displaced, 1.0);
+    }`,
+  fragmentShader: `
+    varying vec3 vViewNormal;
+    void main() {
+      float fresnel = pow(1.0 - max(dot(normalize(vViewNormal), vec3(0.0, 0.0, 1.0)), 0.0), 2.2);
+      vec3 colorA = vec3(0.05, 0.05, 0.06);
+      vec3 colorB = vec3(1.0, 0.35, 0.235);
+      vec3 color = mix(colorA, colorB, fresnel);
+      gl_FragColor = vec4(color, 1.0);
+    }`
+});
+const core = new THREE.Mesh(coreGeo, coreMat);
+scene.add(core);
+
+const wireGeo = new THREE.IcosahedronGeometry(2.6, 1);
+const wireMat = new THREE.MeshBasicMaterial({ color: 0xFF5A3C, wireframe: true, transparent: true, opacity: 0.12 });
+const wire = new THREE.Mesh(wireGeo, wireMat);
+scene.add(wire);
+
+// mouse parallax targets
+let mouseX = 0, mouseY = 0;
+window.addEventListener('mousemove', e => {
+  mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+  mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+});
+
+// scroll-driven camera dolly
+function scrollProgress() {
+  const h = document.documentElement.scrollHeight - window.innerHeight;
+  return h > 0 ? window.scrollY / h : 0;
+}
+
+const clock = new THREE.Clock();
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+  const sp = scrollProgress();
+
+  coreMat.uniforms.uTime.value = t;
+  core.rotation.y = t * 0.15 + sp * Math.PI * 1.5;
+  core.rotation.x = sp * Math.PI * 0.4;
+  wire.rotation.y = -t * 0.08;
+  wire.rotation.x = t * 0.05;
+  particles.rotation.y = t * 0.02 + sp * 0.6;
+
+  camera.position.z = 8 - sp * 4.5;
+  camera.position.x += (mouseX * 0.6 - camera.position.x) * 0.04;
+  camera.position.y += (-mouseY * 0.4 - camera.position.y) * 0.04;
+  camera.lookAt(0, 0, 0);
+
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

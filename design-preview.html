@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Portfolio design preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0B0B0F;
+    color: #F5F3EE;
+    font-family: 'Inter', sans-serif;
+  }
+  .note {
+    background: #1A1A20;
+    color: #C6FF3D;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 10px 24px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+
+  /* HERO */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 48px;
+    background:
+      linear-gradient(180deg, rgba(11,11,15,0.2) 0%, rgba(11,11,15,0.85) 75%),
+      repeating-linear-gradient(135deg, #2A2A32 0px, #2A2A32 2px, #1A1A20 2px, #1A1A20 40px);
+    border-bottom: 1px solid #2A2A32;
+  }
+  .nav {
+    position: absolute;
+    top: 32px; left: 48px; right: 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #F5F3EE;
+  }
+  .nav-links { display: flex; gap: 28px; color: #9a9a9a; }
+  .nav-links span:hover { color: #FF5A3C; cursor: pointer; }
+  .hero-tag {
+    font-family: 'JetBrains Mono', monospace;
+    color: #FF5A3C;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 96px;
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 span { color: #FF5A3C; }
+  .hero-roles {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .role-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 14px;
+    border: 1px solid #2A2A32;
+    border-radius: 999px;
+    color: #C6FF3D;
+    background: rgba(198,255,61,0.06);
+  }
+  .hero-pitch {
+    max-width: 520px;
+    margin-top: 28px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: #b8b6b0;
+  }
+  .cta-row { display: flex; gap: 16px; margin-top: 36px; }
+  .btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 14px 28px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn-primary { background: #FF5A3C; color: #0B0B0F; border: none; }
+  .btn-secondary { background: transparent; color: #F5F3EE; border: 1px solid #2A2A32; }
+
+  /* SECTION: PROJECTS */
+  .section { padding: 100px 48px; }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #FF5A3C;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-weight: 800;
+    font-size: 44px;
+    margin-bottom: 48px;
+    max-width: 640px;
+  }
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 20px;
+  }
+  .card {
+    background: #16161B;
+    border: 1px solid #2A2A32;
+    border-radius: 8px;
+    padding: 28px;
+  }
+  .card:hover { border-color: #FF5A3C; }
+  .card-big { grid-column: span 4; min-height: 320px; }
+  .card-small { grid-column: span 2; min-height: 320px; }
+  .card-tags { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #C6FF3D;
+    border: 1px solid #2A2A32;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  .card h3 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .card p { color: #9a9a9a; font-size: 14px; line-height: 1.6; }
+
+  /* PHOTOGRAPHY */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .photo {
+    aspect-ratio: 3/4;
+    border-radius: 4px;
+    background: repeating-linear-gradient(45deg, #1A1A20 0px, #1A1A20 10px, #222228 10px, #222228 20px);
+  }
+  .photo:nth-child(2), .photo:nth-child(6) { aspect-ratio: 4/3; grid-row: span 1; }
+
+  footer {
+    padding: 60px 48px;
+    border-top: 1px solid #2A2A32;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #9a9a9a;
+  }
+  footer a { color: #F5F3EE; text-decoration: none; margin-left: 20px; }
+  footer a:hover { color: #FF5A3C; }
+</style>
+</head>
+<body>
+
+<div class="note">DESIGN PREVIEW — placeholder content, not the final build</div>
+
+<section class="hero">
+  <div class="nav">
+    <span>ZIQ</span>
+    <div class="nav-links">
+      <span>About</span><span>Skills</span><span>Projects</span><span>Photography</span><span>Contact</span>
+    </div>
+  </div>
+  <div class="hero-tag">Portfolio — 2026</div>
+  <h1>Build.<br>Manage.<br><span>Capture.</span></h1>
+  <div class="hero-roles">
+    <div class="role-pill">Software Developer</div>
+    <div class="role-pill">Project Manager</div>
+    <div class="role-pill">Photographer</div>
+  </div>
+  <p class="hero-pitch">I ship products, run the teams that build them, and shoot the moments in between. This is where all three live.</p>
+  <div class="cta-row">
+    <button class="btn btn-primary">View work</button>
+    <button class="btn btn-secondary">Get in touch</button>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Selected work</div>
+  <div class="section-title">Projects that mix product thinking with hands-on build.</div>
+  <div class="project-grid">
+    <div class="card card-big">
+      <div class="card-tags"><span class="tag">Laravel</span><span class="tag">React</span><span class="tag">PM</span></div>
+      <h3>Project title one</h3>
+      <p>One or two sentence description of the problem, your role, and the outcome. Link to repo/demo goes here.</p>
+    </div>
+    <div class="card card-small">
+      <div class="card-tags"><span class="tag">Agile</span></div>
+      <h3>Project two</h3>
+      <p>Short description.</p>
+    </div>
+    <div class="card card-small">
+      <div class="card-tags"><span class="tag">API</span></div>
+      <h3>Project three</h3>
+      <p>Short description.</p>
+    </div>
+    <div class="card card-big">
+      <div class="card-tags"><span class="tag">Node</span><span class="tag">MySQL</span></div>
+      <h3>Project four</h3>
+      <p>One or two sentence description of the problem, your role, and the outcome.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-label">Behind the lens</div>
+  <div class="section-title">Photography</div>
+  <div class="photo-grid">
+    <div class="photo"></div><div class="photo"></div><div class="photo"></div><div class="photo"></div>
+    <div class="photo"></div><div class="photo"></div><div class="photo"></div><div class="photo"></div>
+  </div>
+</section>
+
+<footer>
+  <span>&copy; 2026 Ziq. Built with Laravel + Inertia + React.</span>
+  <div>
+    <a href="#">GitHub</a>
+    <a href="#">LinkedIn</a>
+    <a href="#">Instagram</a>
+    <a href="#">Email</a>
+  </div>
+</footer>
+
+</body>
+</html>
