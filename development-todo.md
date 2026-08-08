@@ -49,16 +49,22 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
 ## Phase 3 — Public pages (port the static preview into real components)
 
-- [ ] Welcome screen (stats + bio pulled from `site_settings`)
-- [ ] Fork screen — hover dimming, ambient digit rain, flying polaroids, per-path cursor theming
+- [x] Welcome screen (stats + bio pulled from `site_settings`) — with the Continue crossfade into the fork
+- [~] Fork screen — hover dimming works; ambient digit rain, flying polaroids, and per-path cursor theming still to do (they belong with the 3D work below)
 - [ ] Three.js background scene as a React Three Fiber component
-- [ ] Programmer page: Tech stack, Projects, Experience, About, Testimonials, Certifications, Contact — all from the DB
-- [ ] Photographer page: Gear, Gallery with working category filters, About, Bookings, Contact — all from the DB
+- [x] Programmer page: Tech stack, Projects, Experience, About, Testimonials, Certifications, Contact — all from the DB
+- [x] Photographer page: Gear, Gallery with working category filters, About, Bookings, Contact — all from the DB
 - [ ] Aperture blade-wipe and matrix-rain transitions, ported to React
-- [ ] Real routing (`/`, `/programmer`, `/photographer` or similar) so links are shareable — not just JS section-swapping on one URL
+- [x] Real routing (`/`, `/programmer`, `/photographer`) so links are shareable
 - [ ] Mobile pass — actually test on a real phone this time, not just responsive CSS guesses
-- [ ] Accessibility pass: `prefers-reduced-motion` support, visible keyboard focus states
-- [ ] SEO: page titles, meta description, Open Graph tags per route
+- [~] Accessibility pass: `prefers-reduced-motion` honoured (reveals skip straight to visible), visible `:focus-visible` ring, gallery filters are a labelled radiogroup, fork halves leave the tab order until revealed. Still needs a real screen-reader/keyboard run-through.
+- [~] SEO: per-route page titles and meta descriptions are in. **Open Graph tags still missing, and there is no SSR** — Inertia renders client-side, so page text is not in the served HTML. For a job-hunting portfolio that is worth fixing (see Phase 6).
+
+**Fidelity notes from checking against the preview in a real browser:**
+
+- Tag rows sit *above* the first section heading, not below — `Section` takes a `preTitle` slot for this.
+- Cards need the preview's 260px min-height or the grid rhythm collapses.
+- Tech-stack icons come from bundled `react-icons`, not the CDN. **AWS is not in Simple Icons** (trademark removal), so it comes from `react-icons/fa`'s `FaAws`.
 
 ## Phase 4 — Auth & admin CMS
 

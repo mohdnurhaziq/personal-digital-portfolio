@@ -8,15 +8,20 @@
 @plugin '@tailwindcss/forms';
 
 /* Tailwind v4 is CSS-first: tokens live here, not in tailwind.config.js.
-   Palette is locked in portfolio-plan.md — shared cool base, with the two
-   identities separated by accent (programmer blue vs photographer gold). */
+   Names mirror design/portfolio-preview-v4.html so the port stays traceable.
+
+   The palette carries the site's core idea: one shared cool base, with the two
+   identities separated by accent — blue for the programmer path, gold for the
+   photographer path, which also swaps onto a cream ground. */
 @theme {
-    /* Shared base */
+    /* Shared dark base */
     --color-base: #070b14;
-    --color-base-raised: #0d1420;
-    --color-base-border: #1b2534;
-    --color-ink: #f5f7fa;
-    --color-ink-muted: #9aa7bd;
+    --color-panel: #10151f;
+    --color-panel-glass: rgba(16, 21, 31, 0.55);
+    --color-border: #1e2634;
+    --color-fg: #edeff4;
+    --color-fg-dim: #7c8699;
+    --color-white-soft: #f5f7fa;
 
     /* Programmer (weekday) identity */
     --color-dev: #5b8def;
@@ -25,8 +30,14 @@
     /* Photographer (weekend) identity */
     --color-photo: #d4af37;
     --color-photo-bright: #f0c36b;
+    --color-photo-deep: #b8862e;
 
-    /* Type scale */
+    /* Photographer ground: the weekend path runs on cream, not navy */
+    --color-cream: #f8f7f4;
+    --color-cream-border: #e4e1da;
+    --color-ink: #1a1712;
+    --color-ink-dim: #6b6558;
+
     --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
     --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
@@ -39,21 +50,142 @@
 
     body {
         background-color: var(--color-base);
-        color: var(--color-ink);
+        color: var(--color-fg);
         font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
     }
 
-    /* The site hides the native cursor in favour of a custom one; keyboard users
-       still need a visible focus ring (accessibility pass in the todo). */
+    /* The custom cursor replaces the native one on precise pointers only. */
+    @media (pointer: fine) {
+        body.has-custom-cursor {
+            cursor: none;
+        }
+    }
+
+    /* Keyboard users still need a visible focus ring even where the cursor is
+       hidden — the site must stay operable without a mouse. */
     :focus-visible {
         outline: 2px solid var(--color-dev-bright);
-        outline-offset: 2px;
+        outline-offset: 3px;
+        border-radius: 2px;
     }
 }
 
-/* Anyone who asks for reduced motion gets the static site: no 3D, no transitions.
-   Non-negotiable per portfolio-plan.md. */
+@layer components {
+    /* Scroll-reveal. The .in-view class is applied by an IntersectionObserver. */
+    .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition:
+            opacity 0.8s ease,
+            transform 0.8s ease;
+    }
+
+    .reveal.in-view {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Photo + portrait tiles: a white polaroid frame with an inset mat. The mat
+       is a pseudo-element so a real <img> can sit underneath it later. */
+    .polaroid {
+        position: relative;
+        overflow: hidden;
+        background: #ffffff;
+        border: 1px solid var(--color-cream-border);
+        box-shadow: 0 14px 30px rgba(20, 16, 8, 0.08);
+    }
+
+    .polaroid::after {
+        content: '';
+        position: absolute;
+        inset: 10px;
+        border-radius: 2px;
+        background: #efede7;
+    }
+
+    /* On the dark path the same frame is rendered in panel tones instead. */
+    .polaroid-dark {
+        background: var(--color-panel-glass);
+        border-color: var(--color-border);
+        box-shadow: none;
+    }
+
+    .polaroid-dark::after {
+        background: var(--color-panel);
+    }
+
+    /* Experience timeline: connecting line plus a dot per entry. Pseudo-elements
+       keep the markup as a plain semantic list. */
+    .timeline {
+        position: relative;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 6px;
+        bottom: 6px;
+        width: 1px;
+        background: var(--color-border);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding: 0 0 36px 34px;
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 4px;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 6px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        box-sizing: border-box;
+        background: var(--color-base);
+        border: 2px solid var(--color-dev-bright);
+    }
+
+    /* The current role reads as filled rather than hollow. */
+    .timeline-item:first-child::before {
+        background: var(--color-dev-bright);
+    }
+}
+
+@utility animate-float {
+    animation: photoFloat var(--float-dur, 6s) ease-in-out infinite;
+    animation-delay: var(--float-delay, 0s);
+}
+
+@keyframes photoFloat {
+    0%,
+    100% {
+        transform: translateY(0) rotate(0deg);
+    }
+    50% {
+        transform: translateY(-7px) rotate(0.8deg);
+    }
+}
+
+@keyframes bounceDown {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(4px);
+    }
+}
+
+/* Anyone who asks for reduced motion gets the static site: no drifting
+   polaroids, no reveal transitions, no 3D. Non-negotiable per portfolio-plan.md. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -62,5 +194,10 @@
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
+    }
+
+    .reveal {
+        opacity: 1;
+        transform: none;
     }
 }
