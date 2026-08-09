@@ -22,9 +22,13 @@ export const usePortfolio = () => useContext(PortfolioContext);
  * the top of an actual route change, so the cinematic fork still produces
  * shareable URLs rather than swapping sections on one page.
  */
-export default function PortfolioLayout({ children }) {
+export default function PortfolioLayout({ children, scene = true }) {
     const [cursorTheme, setCursorTheme] = useState('dev');
-    const [sceneVisible, setSceneVisible] = useState(true);
+    // Taken as the initial value rather than set from a page effect: an effect
+    // runs a beat too late, and by then BackgroundScene has already started
+    // pulling in three. A path that never shows the scene has to say so before
+    // the first render, not after it.
+    const [sceneVisible, setSceneVisible] = useState(scene);
     const reducedMotion = usePrefersReducedMotion();
 
     const apertureRef = useRef(null);

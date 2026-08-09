@@ -29,8 +29,17 @@ export default defineConfig({
                 // Vite 8 (rolldown) only accepts the function form here.
                 manualChunks: (id) => {
                     if (!id.includes('node_modules')) return;
+
+                    // Order matters: @react-three is a single path segment, so
+                    // it is caught here and never by the `react` test below.
                     if (/[\\/](three|@react-three)[\\/]/.test(id)) return 'three';
                     if (/[\\/]gsap[\\/]/.test(id)) return 'gsap';
+
+                    // React has to be named explicitly. Left unnamed, rolldown
+                    // folded the shared React runtime into `three` — so every
+                    // page in the app, admin and login included, statically
+                    // imported 872 KB of WebGL it had no use for.
+                    if (/[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'react';
                 },
             },
         },

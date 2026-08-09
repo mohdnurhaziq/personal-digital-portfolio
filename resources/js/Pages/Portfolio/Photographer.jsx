@@ -16,14 +16,11 @@ const label = (category) => category.charAt(0).toUpperCase() + category.slice(1)
 
 function Photographer({ settings, tags, gear, photos, categories, contactLinks }) {
     const [active, setActive] = useState('all');
-    const { navigate, setCursorTheme, setSceneVisible } = usePortfolio();
+    const { navigate, setCursorTheme } = usePortfolio();
 
     useEffect(() => {
         setCursorTheme('photo');
-        // This path runs on an opaque cream ground, so the navy 3D field would
-        // never be seen — no reason to keep rendering it.
-        setSceneVisible(false);
-    }, [setCursorTheme, setSceneVisible]);
+    }, [setCursorTheme]);
 
     const visible = useMemo(
         () => (active === 'all' ? photos : photos.filter((photo) => photo.category === active)),
@@ -175,6 +172,8 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
     );
 }
 
-Photographer.layout = (page) => <PortfolioLayout>{page}</PortfolioLayout>;
+// scene={false}: this path runs on an opaque cream ground the navy 3D field
+// could never show through, so three is not downloaded here at all.
+Photographer.layout = (page) => <PortfolioLayout scene={false}>{page}</PortfolioLayout>;
 
 export default Photographer;

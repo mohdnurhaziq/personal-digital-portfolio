@@ -144,7 +144,12 @@ Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot relo
 ## Phase 6 — Polish & launch
 
 - [ ] Cross-browser check
-- [ ] Performance pass: lazy-load images. (Three.js/GSAP already code-split into their own chunks in `vite.config.js` — Vite 8/rolldown needs `manualChunks` in function form, the object form silently fails.)
+- [x] Performance pass. Gallery images already carry `loading="lazy"`. Two real defects, both found by measuring in the browser rather than reading the config:
+
+  - **React was inside the `three` chunk.** `manualChunks` named `three` and `gsap` but left React unnamed, so rolldown folded the shared React runtime into `three` — the built chunk held `createRoot` and `Scheduler` alongside `WebGLRenderer`. The manifest then listed `three` as a *static* import of `AdminLayout`, `ApplicationLogo`, `GuestLayout` and `Photographer`, and it was emitted as a `<link rel="modulepreload">` in the head. Every page in the app, login included, fetched 872 KB of WebGL at high priority to render a form. React now has its own named chunk; `three` is statically imported only by the lazily-loaded `Scene.jsx` and appears in no page's head preloads.
+  - **The photographer path kept the 3D scene running.** Hiding it only faded it to `opacity-0`, so an invisible WebGL render loop ran behind an opaque cream ground. `PortfolioLayout` now takes a `scene` prop — read as *initial state*, because an effect runs a beat too late to stop the chunk being requested — and `Photographer.layout` passes `scene={false}`. `BackgroundScene` unmounts rather than fading, with the unmount trailing the 700ms transition so the landing page's hand-off to the fork still cross-fades. Verified: mounted before, still mounted mid-fade, gone after.
+
+  **Not a bug, worth knowing:** every page still pulls the whole manifest (~1.3 MB, three included) *after* load. That is `Vite::prefetch(concurrency: 3)` in `AppServiceProvider` — a deliberate Laravel feature that fetches at `rel=prefetch` (idle) priority so later SPA navigations are instant. It does not block first paint. Drop it or lower the concurrency if mobile data cost matters more than instant navigation.
 - [ ] Lighthouse audit
 - [ ] Pick a deploy target (needs PHP hosting — Forge/DigitalOcean, Render, or Railway; not static-exportable with Inertia+Laravel)
 - [ ] Production `.env`, database, and switch file storage to S3 (or similar) instead of local disk

@@ -50,6 +50,26 @@ function useSceneProfile() {
 export default function BackgroundScene({ visible = true }) {
     const profile = useSceneProfile();
 
+    // Hiding the scene used to mean fading it to opacity-0 and leaving it
+    // running. On the photographer path — an opaque cream ground it can never
+    // show through — that cost 892 KB of three plus a live WebGL render loop
+    // for something invisible. It now unmounts instead.
+    //
+    // The unmount trails the 700ms fade so the landing page's hand-off to the
+    // fork still cross-fades rather than popping.
+    const [mounted, setMounted] = useState(visible);
+
+    useEffect(() => {
+        if (visible) {
+            setMounted(true);
+            return;
+        }
+
+        const timer = setTimeout(() => setMounted(false), 700);
+
+        return () => clearTimeout(timer);
+    }, [visible]);
+
     return (
         <div
             className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 ${
@@ -61,7 +81,7 @@ export default function BackgroundScene({ visible = true }) {
                 the 3D scene is skipped or still loading. */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_40%,#0d1626_0%,#070b14_70%)]" />
 
-            {profile && (
+            {mounted && profile && (
                 <Suspense fallback={null}>
                     <Scene particleCount={profile.particleCount} />
                 </Suspense>
