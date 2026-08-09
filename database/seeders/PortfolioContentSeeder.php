@@ -47,7 +47,10 @@ class PortfolioContentSeeder extends Seeder
             Certification::class, GearItem::class, GalleryPhoto::class,
             ContactLink::class,
         ] as $model) {
-            $model::query()->delete();
+            // Row by row rather than a mass delete: the media library removes
+            // uploaded files on the model's deleting event, and a bulk query
+            // fires no events, so it would leave the files behind on disk.
+            $model::query()->get()->each->delete();
         }
     }
 
@@ -71,7 +74,10 @@ class PortfolioContentSeeder extends Seeder
             ['dev_about_title', 'About', 'dev', 'text', 'About section title'],
             ['dev_about_bio', 'Placeholder bio — how you got into software and product management, what you care about building, and how you like to lead teams and ship products. Replace with your real story once you\'ve got it written.', 'dev', 'textarea', 'About bio'],
             ['dev_contact_lead', 'Open to new roles, freelance work, or just talking shop. Reach out.', 'dev', 'textarea', 'Contact lead'],
-            ['resume_url', '#', 'dev', 'url', 'Resume PDF URL'],
+            // The upload wins when there is one; the URL is the escape hatch
+            // for a resume that already lives somewhere else.
+            ['resume_pdf', null, 'dev', 'file', 'Resume PDF'],
+            ['resume_url', '#', 'dev', 'url', 'Resume URL (used only when no PDF is uploaded)'],
 
             // Weekend / photographer path
             ['photo_kicker', 'Weekends', 'photo', 'text', 'Page kicker'],

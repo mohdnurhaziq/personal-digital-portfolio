@@ -24,7 +24,7 @@ class PortfolioController extends Controller
     public function welcome(): Response
     {
         return Inertia::render('Portfolio/Welcome', [
-            'settings' => SiteSetting::values(),
+            'settings' => SiteSetting::publicValues(),
             'stats' => Stat::ordered()->get(['value', 'label']),
         ]);
     }
@@ -35,7 +35,7 @@ class PortfolioController extends Controller
     public function programmer(): Response
     {
         return Inertia::render('Portfolio/Programmer', [
-            'settings' => SiteSetting::values(),
+            'settings' => SiteSetting::publicValues(),
             'tags' => Tag::forPath(Tag::PATH_DEV)->ordered()->pluck('label'),
             // Grouped here rather than in React so the page renders one card per
             // group without the client having to regroup a flat list.
@@ -58,7 +58,7 @@ class PortfolioController extends Controller
     public function photographer(): Response
     {
         return Inertia::render('Portfolio/Photographer', [
-            'settings' => SiteSetting::values(),
+            'settings' => SiteSetting::publicValues(),
             'tags' => Tag::forPath(Tag::PATH_PHOTO)->ordered()->pluck('label'),
             'gear' => GearItem::ordered()->get(['category', 'value']),
             // Eager load media so the grid doesn't fire a query per tile.

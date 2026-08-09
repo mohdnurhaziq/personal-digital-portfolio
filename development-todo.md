@@ -37,7 +37,7 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 - [x] `inertia-laravel` v2 → v3.3.1 to match the `@inertiajs/react` 3.x client.
 - [x] Dropped `app.jsx`'s `./bootstrap` import — Laravel 13 no longer ships that file (Inertia v3 replaced Axios with its own HTTP client).
 - [x] Self-hosted Bricolage Grotesque / Inter / JetBrains Mono via fontsource instead of the preview's Google Fonts CDN link.
-- [ ] Still to install when the admin CMS starts: Spatie Media Library (Phase 4)
+- [x] Spatie Media Library — installed in Phase 4, and now carries the resume PDF as well as gallery photos.
 
 ## Phase 2 — Database schema (content becomes dynamic, not hardcoded)
 
@@ -92,9 +92,13 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 - [x] Install Spatie Media Library (11.23.4) for photo uploads with auto-thumbnailing — `thumb` (600px) and `display` (1600px) conversions, single-file collection so re-uploading replaces rather than piles up. GD is present, so conversions work.
 - [x] Basic upload validation — images only (`jpeg,jpg,png,webp`), 8 MB cap, enforced server-side.
 - [x] Reordering — up/down buttons persisting a new `sort_order`. Chose buttons over drag-and-drop: they work with a keyboard and on touch, which drag alone does not.
-- [ ] Resume PDF upload in site settings — not done; gallery photos are the only upload so far.
+- [x] Resume PDF upload in site settings. `site_settings` gained a `file` type, and `SiteSetting` is now a media owner (single-file `file` collection, `application/pdf` only), so the setting rows stay the one registry of everything editable rather than needing a table of their own. The form gets an upload field, a link to what is already there with its size and date, and a remove checkbox.
 
-**Verified in a browser, not just in tests:** edit → flash → list updates → public site reflects it; reorder persists; empty create is blocked with per-field errors; a real PNG upload generates conversions and appears in the public gallery.
+  **The file is served by a route, `GET /resume`, not by a link to the media URL.** Three reasons: the link survives a re-upload, the download lands as `mohd-nur-haziq-irsyamuddin-resume.pdf` rather than a storage hash, and — unlike Media Library's absolute URLs — it does not break when the site is served on a port `APP_URL` does not name. The existing `resume_url` setting stays as an escape hatch for a resume hosted elsewhere; `SiteSetting::publicValues()` overrides it with the route when a PDF is attached, so the Programmer page keeps reading one key and never learns where the file came from.
+
+  Validation is doubled up on purpose: `mimetypes:application/pdf` checks what the file *is*, `mimes:pdf` checks what it is *called*, and the media collection sniffs the stored file a third time. That third check is why `UploadedFile::fake()->create(…, 'application/pdf')` does not work in the tests — the fake claims a mime type but is zero bytes, so it lands as `application/x-empty`. The test writes real PDF bytes instead.
+
+**Verified in a browser, not just in tests:** edit → flash → list updates → public site reflects it; reorder persists; empty create is blocked with per-field errors; a real PNG upload generates conversions and appears in the public gallery. For the resume: a real PDF uploads and saves, the field then lists it with size and date, `/resume` returns it as `application/pdf` `inline` with the owner-name filename, the Programmer page's download button appears pointing at the port-correct `/resume`, a `.txt` is rejected with "The file must be a PDF." while the existing upload is left alone, and ticking remove clears the row, deletes the file from disk and takes `/resume` back to a 404.
 
 **Gotcha worth remembering:** the PHP tests passed while the edit form was actually broken, because they call `$this->put()` directly and bypass the form. The bug was in `Form.jsx` — Inertia's `post()` ignores `data`/`method` passed in options, so the `_method: put` override never reached the server and updates 404'd. It has to live in the form data. Only clicking the button in a real browser caught it.
 

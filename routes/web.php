@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ResumeController;
 use Illuminate\Support\Facades\Route;
 
 // Public portfolio. Each path gets a real URL so links are shareable — the
@@ -15,6 +16,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [PortfolioController::class, 'welcome'])->name('welcome');
 Route::get('/programmer', [PortfolioController::class, 'programmer'])->name('programmer');
 Route::get('/photographer', [PortfolioController::class, 'photographer'])->name('photographer');
+
+// Stable public URL for the resume uploaded in site settings, so the link can
+// go in an application without breaking the next time the PDF is replaced.
+Route::get('/resume', ResumeController::class)->name('resume');
 
 // Rate limited as the second line of spam defence behind the honeypot: a bot
 // that works out the trap still cannot flood the inbox.
