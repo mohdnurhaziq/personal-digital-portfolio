@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { fileInputClass } from '@/Components/Admin/fileInput';
 
 const inputClass =
     'w-full rounded border border-border bg-panel px-3 py-2 text-sm text-fg focus:border-dev focus:ring-0';
@@ -66,7 +67,7 @@ export default function Settings({ groups }) {
                         name={setting.key}
                         type="file"
                         accept="application/pdf"
-                        className={inputClass}
+                        className={fileInputClass}
                         aria-describedby={`${setting.key}-help`}
                         onChange={(e) =>
                             setData('uploads', {

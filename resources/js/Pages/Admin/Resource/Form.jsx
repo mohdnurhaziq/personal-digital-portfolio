@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ImageCollectionField from '@/Components/Admin/ImageCollectionField';
+import { fileInputClass } from '@/Components/Admin/fileInput';
 
 const inputClass =
     'w-full rounded border border-border bg-panel px-3 py-2 text-sm text-fg placeholder:text-fg-dim focus:border-dev focus:ring-0';
@@ -83,7 +84,6 @@ export default function Form({ resource, record }) {
                     field={field}
                     record={record}
                     resourceKey={resource.key}
-                    inputClass={inputClass}
                     onPick={(files) => setData(field.name, files)}
                 />
             );
@@ -100,6 +100,7 @@ export default function Form({ resource, record }) {
                     )}
                     <input
                         {...common}
+                        className={fileInputClass}
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
                         onChange={(e) => setData(field.name, e.target.files[0] ?? null)}

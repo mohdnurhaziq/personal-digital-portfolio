@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fileInputClass } from './fileInput';
 
 /**
  * A hand-ordered set of uploaded images.
@@ -12,12 +13,15 @@ import { useState } from 'react';
  * Ordering uses buttons rather than drag-and-drop, for the same reason the
  * record lists do: dragging works with neither a keyboard nor a touchscreen.
  */
-export default function ImageCollectionField({ field, record, resourceKey, inputClass, onPick }) {
+export default function ImageCollectionField({ field, record, resourceKey, onPick }) {
     const images = record?.[field.name] ?? [];
     const [busy, setBusy] = useState(false);
     const [pending, setPending] = useState([]);
 
     const base = `/admin/${resourceKey}/${record?.id}/media`;
+
+    // Previews are object URLs, which stay allocated until revoked.
+    useEffect(() => () => pending.forEach((file) => URL.revokeObjectURL(file.preview)), [pending]);
 
     const move = (index, direction) => {
         const next = [...images];
@@ -45,7 +49,11 @@ export default function ImageCollectionField({ field, record, resourceKey, input
 
     const pick = (event) => {
         const files = Array.from(event.target.files ?? []);
-        setPending(files.map((file) => file.name));
+
+        // Show the chosen files straight away. Without this the only feedback
+        // is the filename strip the browser draws, which is easy to miss —
+        // picking several images looked like nothing had happened at all.
+        setPending(files.map((file) => ({ name: file.name, preview: URL.createObjectURL(file) })));
         onPick(files);
     };
 
@@ -113,16 +121,29 @@ export default function ImageCollectionField({ field, record, resourceKey, input
                 type="file"
                 multiple
                 accept="image/jpeg,image/png,image/webp"
-                className={inputClass}
+                className={fileInputClass}
                 aria-describedby={field.help ? `${field.name}-help` : undefined}
                 onChange={pick}
             />
 
             {pending.length > 0 && (
-                <p className="text-xs text-fg-dim">
-                    {pending.length} file{pending.length === 1 ? '' : 's'} ready to upload — they
-                    are added when you save.
-                </p>
+                <div className="rounded border border-dashed border-border p-3">
+                    <p className="mb-2 text-xs text-dev-bright">
+                        {pending.length} new image{pending.length === 1 ? '' : 's'} chosen — click
+                        Save changes below to upload {pending.length === 1 ? 'it' : 'them'}.
+                    </p>
+                    <ul className="flex flex-wrap gap-2">
+                        {pending.map((file) => (
+                            <li key={file.preview}>
+                                <img
+                                    src={file.preview}
+                                    alt={file.name}
+                                    className="h-12 w-16 rounded object-cover opacity-70"
+                                />
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             )}
 
             {!record && (
