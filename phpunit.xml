@@ -23,14 +23,37 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="sqlite"/>
-        <env name="DB_DATABASE" value=":memory:"/>
-        <env name="DB_URL" value=""/>
-        <env name="MAIL_MAILER" value="array"/>
+
+        <!-- The database the suite is allowed to touch, pinned three ways.
+             `<env>` alone is not enough, and the gap destroys data:
+
+             - Without force, PHPUnit leaves an already-set variable alone, so
+               Compose's DB_CONNECTION=mysql survived into the test run.
+             - force fixes getenv() and $_ENV but not $_SERVER, and Laravel's
+               env() reads $_SERVER first — so it still resolved to mysql.
+
+             The result was RefreshDatabase truncating the live development
+             database on every `artisan test` inside the container. `<server>`
+             is the entry that actually closes it. -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="DB_URL" value=""/>
+
+        <!-- Same reasoning, different blast radius: a container or CI runner
+             holding real SMTP credentials would otherwise send live mail from
+             the contact-form tests. -->
+        <env name="MAIL_MAILER" value="array" force="true"/>
+        <server name="MAIL_MAILER" value="array"/>
+
         <!-- Never let the suite depend on whether a dev SSR process happens to
              be running: with it up, tests assert against server-rendered HTML;
              with it down, against an empty shell. -->
-        <env name="INERTIA_SSR_ENABLED" value="false"/>
+        <env name="INERTIA_SSR_ENABLED" value="false" force="true"/>
+        <server name="INERTIA_SSR_ENABLED" value="false"/>
+
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="PULSE_ENABLED" value="false"/>

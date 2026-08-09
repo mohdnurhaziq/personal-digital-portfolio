@@ -157,6 +157,19 @@ Fixed in `AppServiceProvider`, which appends the container's variables to the al
 
 The general lesson for the earlier `APP_URL` note further up: with `artisan serve`, setting `APP_URL` in the *environment* does nothing. It has to be in `.env`, or on this allowlist.
 
+**A ninth, from the same family, and this one destroyed data.** Running `php artisan test` *inside the container* truncated the development database. `RefreshDatabase` was operating on MySQL, not on the in-memory SQLite the suite is supposed to use.
+
+`phpunit.xml` pins `DB_CONNECTION=sqlite`, so this looks impossible. Two layers had to be wrong at once:
+
+1. PHPUnit's `<env>` does **not** overwrite a variable that already exists in the environment unless it carries `force="true"`. Compose exports `DB_CONNECTION=mysql`, so the pin was skipped entirely.
+2. Adding `force="true"` was still not enough. It fixes `getenv()` and `$_ENV`, but not `$_SERVER` — and Laravel's `env()` reads `$_SERVER` first. A probe test made the split visible: `getenv='sqlite' _ENV='sqlite' _SERVER='mysql' env()='mysql' config=mysql db=portfolio`.
+
+The entry that actually closes it is PHPUnit's `<server>` element, which Laravel's own `phpunit.xml` does not ship. The DB variables are now pinned all three ways, and `MAIL_MAILER` with them — the same hole would let a runner holding real SMTP credentials send live mail from the contact-form tests.
+
+Verified the way it should have been the first time: seed, run the full suite, count the rows. Content survives at 26 settings / 4 projects / 8 photos / 12 tech-stack items, and the suite still passes 77/77.
+
+Worth internalising, because this and bug 8 are the same shape: **inside a container, a real environment variable silently outranks the file everyone assumes is authoritative** — `.env` for `artisan serve`, `phpunit.xml` for the test suite. Neither failure announces itself.
+
 **Docker's own storage broke during this.** When the host disk filled, containerd's content store started throwing `input/output error` on every command — even `docker images`. Restarting Docker Desktop cleared it, and `docker builder prune -af` reclaimed 8.7 GB. Build cache only: regenerable, and it touches no images, volumes or containers — which mattered, because other projects' containers were running at the time, so a broad prune or a Docker reset was never an option.
 
 ## Bug sweep
