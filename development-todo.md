@@ -147,6 +147,16 @@ Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot relo
 
    `ln` rather than `artisan storage:link --relative`, because that flag needs `symfony/filesystem`, which is not installed — a one-time setup command is a poor reason to add a production dependency.
 
+**An eighth, found on a later run — and the worst of them, because everything looked fine.** `artisan serve` spawns the PHP development server as a child process with a *filtered* environment: `ServeCommand::$passthroughVariables` is an allowlist, and anything not on it is stripped. `DB_*` and `APP_URL` are not on it.
+
+So in the dev stack, Compose set `DB_CONNECTION=mysql` on the container and the entrypoint's `php artisan migrate` — a direct call, full environment — duly migrated MySQL. But every HTTP request is served by the *child*, which never saw those variables and fell back to the bind-mounted `.env`: `DB_CONNECTION=sqlite`. The container was serving the host's `database/database.sqlite` while reporting a healthy, migrated MySQL beside it.
+
+Nothing about this is visible from outside. All three pages return 200, the suite passes inside the container (artisan again, so MySQL), and `docker compose exec … tinker` reads MySQL too — so every probe that would normally catch it agrees with the wrong answer. What gave it away was the photographer page: one gallery image 404ing against `http://localhost/storage/…`, a URL with no port, built from the `.env` `APP_URL` — and that photo existed only in the host's SQLite file, not in MySQL at all.
+
+Fixed in `AppServiceProvider`, which appends the container's variables to the allowlist. Verified by the same disagreement disappearing: the served page now returns the MySQL rows (eight seeded photos, no media, `thumb_url: null`) where it previously returned SQLite's, and the photographer page renders with zero console errors.
+
+The general lesson for the earlier `APP_URL` note further up: with `artisan serve`, setting `APP_URL` in the *environment* does nothing. It has to be in `.env`, or on this allowlist.
+
 **Docker's own storage broke during this.** When the host disk filled, containerd's content store started throwing `input/output error` on every command — even `docker images`. Restarting Docker Desktop cleared it, and `docker builder prune -af` reclaimed 8.7 GB. Build cache only: regenerable, and it touches no images, volumes or containers — which mattered, because other projects' containers were running at the time, so a broad prune or a Docker reset was never an option.
 
 ## Bug sweep
