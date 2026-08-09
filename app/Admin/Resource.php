@@ -3,6 +3,7 @@
 namespace App\Admin;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * Describes one manageable content type.
@@ -57,6 +58,13 @@ class Resource
 
         foreach ($this->fields as $field) {
             $rules[$field->name] = $field->rules;
+
+            // A multi-upload validates twice: the field itself as an array,
+            // and every file in it. Without the second, one bad file in a
+            // batch of ten would be stored unchecked.
+            if ($field->itemRules !== []) {
+                $rules["{$field->name}.*"] = $field->itemRules;
+            }
         }
 
         if ($this->sortable) {
@@ -64,6 +72,31 @@ class Resource
         }
 
         return $rules;
+    }
+
+    /**
+     * Human names for the validation messages.
+     *
+     * Without these a rejected file reads "The screenshots.1 field must be an
+     * image", which exposes the array index to someone who never typed one.
+     *
+     * @return array<string, string>
+     */
+    public function validationAttributes(): array
+    {
+        $attributes = [];
+
+        foreach ($this->fields as $field) {
+            $label = Str::lower($field->label);
+
+            $attributes[$field->name] = $label;
+
+            if ($field->itemRules !== []) {
+                $attributes["{$field->name}.*"] = Str::singular($label);
+            }
+        }
+
+        return $attributes;
     }
 
     public function field(string $name): ?Field

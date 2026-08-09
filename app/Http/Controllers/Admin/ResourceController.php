@@ -6,12 +6,12 @@ use App\Admin\AdminResources;
 use App\Admin\Field;
 use App\Admin\Resource;
 use App\Http\Controllers\Controller;
-use App\Models\GalleryPhoto;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -45,7 +45,7 @@ class ResourceController extends Controller
     public function store(Request $request, string $resource): RedirectResponse
     {
         $definition = $this->resolve($resource);
-        $data = $request->validate($definition->rules());
+        $data = $request->validate($definition->rules(), [], $definition->validationAttributes());
 
         $record = $definition->newModel();
         $this->fill($record, $data, $definition);
@@ -56,7 +56,7 @@ class ResourceController extends Controller
         }
 
         $record->save();
-        $this->syncImage($request, $record, $definition);
+        $this->syncMedia($request, $record, $definition);
 
         return redirect()
             ->route('admin.resource.index', $definition->key)
@@ -76,13 +76,13 @@ class ResourceController extends Controller
     public function update(Request $request, string $resource, int $id): RedirectResponse
     {
         $definition = $this->resolve($resource);
-        $data = $request->validate($definition->rules());
+        $data = $request->validate($definition->rules(), [], $definition->validationAttributes());
 
         $record = $definition->find($id);
         $this->fill($record, $data, $definition);
         $record->save();
 
-        $this->syncImage($request, $record, $definition);
+        $this->syncMedia($request, $record, $definition);
 
         return redirect()
             ->route('admin.resource.index', $definition->key)
@@ -135,7 +135,7 @@ class ResourceController extends Controller
     private function fill($record, array $data, Resource $definition): void
     {
         foreach ($definition->fields as $field) {
-            if ($field->type === Field::IMAGE) {
+            if ($field->isMedia()) {
                 continue; // Handled by the media library, not a column.
             }
 
@@ -159,16 +159,68 @@ class ResourceController extends Controller
         }
     }
 
-    private function syncImage(Request $request, $record, Resource $definition): void
+    /**
+     * Attach uploaded files to the collection the field names.
+     *
+     * The collection comes from the field rather than being hard-coded: this
+     * used to always write to the gallery's, so a second model with an image
+     * would have filled a collection it never registered — no conversions, and
+     * nothing raised to say so.
+     */
+    private function syncMedia(Request $request, $record, Resource $definition): void
     {
         foreach ($definition->fields as $field) {
-            if ($field->type !== Field::IMAGE || ! $request->hasFile($field->name)) {
+            if (! $field->isMedia() || ! $request->hasFile($field->name)) {
                 continue;
             }
 
-            $record->addMedia($request->file($field->name))
-                ->toMediaCollection(GalleryPhoto::COLLECTION);
+            // IMAGE is a single-file collection, so this replaces. IMAGES
+            // appends, and new files land after the ones already there.
+            $files = $field->type === Field::IMAGES
+                ? $request->file($field->name)
+                : [$request->file($field->name)];
+
+            foreach ($files as $file) {
+                $record->addMedia($file)->toMediaCollection($field->collection);
+            }
         }
+    }
+
+    /**
+     * Delete one uploaded file.
+     */
+    public function destroyMedia(string $resource, int $id, int $media): RedirectResponse
+    {
+        $definition = $this->resolve($resource);
+        $record = $definition->find($id);
+
+        // Scoped through the record, so an id belonging to another model's
+        // collection cannot be deleted by guessing the number.
+        $record->media()->whereKey($media)->firstOrFail()->delete();
+
+        return back()->with('status', 'Image deleted.');
+    }
+
+    /**
+     * Persist a new order for a record's uploaded files.
+     */
+    public function reorderMedia(Request $request, string $resource, int $id): RedirectResponse
+    {
+        $definition = $this->resolve($resource);
+        $record = $definition->find($id);
+
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['required', 'integer'],
+        ]);
+
+        // Only ids that belong to this record, for the same reason as above.
+        $owned = $record->media()->pluck('id')->all();
+        $ids = array_values(array_intersect($validated['ids'], $owned));
+
+        Media::setNewOrder($ids);
+
+        return back()->with('status', 'Images reordered.');
     }
 
     /**
@@ -189,6 +241,7 @@ class ResourceController extends Controller
                 // The form edits lists as one item per line.
                 Field::LIST => collect($record->{$field->name} ?? [])->implode("\n"),
                 Field::IMAGE => $record->thumb_url ?? null,
+                Field::IMAGES => $record->presentMedia($field->collection),
                 default => $record->{$field->name},
             };
         }

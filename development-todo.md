@@ -98,6 +98,28 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 
   Validation is doubled up on purpose: `mimetypes:application/pdf` checks what the file *is*, `mimes:pdf` checks what it is *called*, and the media collection sniffs the stored file a third time. That third check is why `UploadedFile::fake()->create(…, 'application/pdf')` does not work in the tests — the fake claims a mime type but is zero bytes, so it lands as `application/x-empty`. The test writes real PDF bytes instead.
 
+- [x] **Project screenshots.** Not every project can be linked to — internal systems, work behind a login, clients who would rather not be demoed — so for many of them a picture is the only evidence the thing exists. A project now carries several screenshots, hand-ordered, deleted one at a time. The first is the card image; the rest sit under it as thumbnails, and any of them opens a full-size viewer.
+
+  Ordering uses buttons rather than drag-and-drop, for the same reason the record lists do: dragging works with neither a keyboard nor a touchscreen. Adding happens on save, because the files ride along in the form's multipart body; removing and reordering act on one image and have their own endpoints, since making someone submit the whole form to delete one picture would be a strange way to ask.
+
+  The viewer is a native `<dialog>` rather than a hand-rolled overlay. `showModal()` brings the focus trap, the inert background, the Escape handler and the backdrop with it, and those are exactly the things a bespoke version gets subtly wrong. Verified in the browser: focus moves inside on open, `:modal` matches, Escape closes it and hands focus back to the thumbnail that opened it.
+
+  Deleting is scoped through the record — `$record->media()->whereKey(...)` — so an id belonging to another project's collection 404s instead of being deleted by guessing a number.
+
+## Every upload path, audited
+
+Three surfaces accept files: a gallery photo (one per row, replaced on re-upload), the resume PDF (one, replaced), and project screenshots (many, appended). Checking them together turned up one real bug and three things worth tightening.
+
+**The bug: every image field wrote to the gallery's collection.** `ResourceController::syncImage()` hard-coded `GalleryPhoto::COLLECTION`, so the moment a second model gained an image field its files would have been filed under `photo` — a collection `Project` never registers. No conversions would be generated, no thumbnail would resolve, and nothing would be raised to say so; the upload would simply appear to work. It was harmless only because the gallery was the sole model with an image. The collection is now named on the field itself and asserted in a test, so the failure cannot come back quietly.
+
+Tightened while in there:
+
+- **The gallery collection accepted any mime type.** The resume collection already restricted itself to `application/pdf`, but the image ones took whatever passed request validation. Both now declare their accepted types, so the check survives even if a rule is edited away.
+- **The two conversion definitions were copies.** Gallery and project images now share `HasImageUploads`, so `thumb` and `display` cannot drift apart. Note it deliberately does *not* define `registerMediaConversions`: `InteractsWithMedia` already declares one, and two traits offering the same method is a fatal collision that would need resolving with `insteadof` on every model.
+- **Per-file errors never reached the form.** A rejected file in a batch reports as `screenshots.1`, and the form only looked up the field's own key — so one bad file in ten would have looked like the upload silently did nothing. The message also read "The screenshots.1 field must be an image", exposing an array index to someone who never typed one; validation attributes now make it "The screenshot field must be an image".
+
+Multi-uploads validate twice on purpose — the field as an array, and every file within it. Without the second, one bad file in a batch would be stored unchecked.
+
 **Verified in a browser, not just in tests:** edit → flash → list updates → public site reflects it; reorder persists; empty create is blocked with per-field errors; a real PNG upload generates conversions and appears in the public gallery. For the resume: a real PDF uploads and saves, the field then lists it with size and date, `/resume` returns it as `application/pdf` `inline` with the owner-name filename, the Programmer page's download button appears pointing at the port-correct `/resume`, a `.txt` is rejected with "The file must be a PDF." while the existing upload is left alone, and ticking remove clears the row, deletes the file from disk and takes `/resume` back to a 404.
 
 **Gotcha worth remembering:** the PHP tests passed while the edit form was actually broken, because they call `$this->put()` directly and bypass the form. The bug was in `Form.jsx` — Inertia's `post()` ignores `data`/`method` passed in options, so the `_method: put` override never reached the server and updates 404'd. It has to live in the form data. Only clicking the button in a real browser caught it.

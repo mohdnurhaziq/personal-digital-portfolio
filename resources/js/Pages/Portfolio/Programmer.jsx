@@ -1,6 +1,7 @@
 import Seo from '@/Components/Portfolio/Seo';
 import { useEffect } from 'react';
 import Card from '@/Components/Portfolio/Card';
+import ScreenshotStrip from '@/Components/Portfolio/ScreenshotStrip';
 import ContactSection from '@/Components/Portfolio/ContactSection';
 import PageHero from '@/Components/Portfolio/PageHero';
 import PageNav from '@/Components/Portfolio/PageNav';
@@ -93,6 +94,11 @@ function Programmer({
                                 title={project.title}
                                 className="flex min-h-65 flex-col"
                             >
+                                <ScreenshotStrip
+                                    screenshots={project.screenshots}
+                                    title={project.title}
+                                    theme={theme}
+                                />
                                 <p className={`text-sm leading-relaxed ${theme.cardBody}`}>
                                     {project.description}
                                 </p>

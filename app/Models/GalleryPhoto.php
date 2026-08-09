@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasImageUploads;
 use App\Models\Concerns\HasSortOrder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class GalleryPhoto extends Model implements HasMedia
 {
+    use HasImageUploads;
     use HasSortOrder;
     use InteractsWithMedia;
 
@@ -37,24 +38,18 @@ class GalleryPhoto extends Model implements HasMedia
         return $query->where('is_published', true);
     }
 
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->registerImageConversions();
+    }
+
     public function registerMediaCollections(): void
     {
         // One photo per row: adding a new file replaces the old one rather than
         // silently piling up orphaned originals.
-        $this->addMediaCollection(self::COLLECTION)->singleFile();
-    }
-
-    public function registerMediaConversions(?Media $media = null): void
-    {
-        // The grid never shows anything near full size, so serving the original
-        // there would waste most of the bytes downloaded on the page.
-        $this->addMediaConversion('thumb')
-            ->fit(Fit::Max, 600, 600)
-            ->nonQueued();
-
-        $this->addMediaConversion('display')
-            ->fit(Fit::Max, 1600, 1600)
-            ->nonQueued();
+        $this->addMediaCollection(self::COLLECTION)
+            ->acceptsMimeTypes(self::IMAGE_MIME_TYPES)
+            ->singleFile();
     }
 
     /**

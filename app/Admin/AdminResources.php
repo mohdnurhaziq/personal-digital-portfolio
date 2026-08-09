@@ -64,6 +64,15 @@ class AdminResources
                         ['value' => 'big', 'label' => 'Big (two thirds)'],
                         ['value' => 'small', 'label' => 'Small (one third)'],
                     ], 'Alternating sizes are what give the grid its rhythm.'),
+                    Field::make(
+                        'screenshots',
+                        'Screenshots',
+                        Field::IMAGES,
+                        ['nullable', 'array'],
+                        help: 'JPEG, PNG or WebP, up to 8 MB each. The first one is the card image — reorder to change which.',
+                        collection: Project::COLLECTION,
+                        itemRules: ['image', 'mimes:jpeg,jpg,png,webp', 'max:8192'],
+                    ),
                 ],
             ),
 
@@ -185,7 +194,7 @@ class AdminResources
                 // Thumbnail first: it is the only way to tell photos apart at a glance.
                 columns: ['image', 'title', 'category'],
                 fields: [
-                    Field::make('image', 'Photo', Field::IMAGE, ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192'], help: 'JPEG, PNG or WebP, up to 8 MB.'),
+                    Field::make('image', 'Photo', Field::IMAGE, ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192'], help: 'JPEG, PNG or WebP, up to 8 MB.', collection: GalleryPhoto::COLLECTION),
                     Field::make('title', 'Title', rules: ['nullable', 'string', 'max:255']),
                     Field::make('caption', 'Caption', Field::TEXTAREA),
                     Field::make('category', 'Category', Field::SELECT, ['required', 'in:'.implode(',', GalleryPhoto::CATEGORIES)], array_map(

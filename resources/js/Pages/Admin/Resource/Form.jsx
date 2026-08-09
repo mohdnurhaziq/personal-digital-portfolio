@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import ImageCollectionField from '@/Components/Admin/ImageCollectionField';
 
 const inputClass =
     'w-full rounded border border-border bg-panel px-3 py-2 text-sm text-fg placeholder:text-fg-dim focus:border-dev focus:ring-0';
@@ -11,7 +12,9 @@ export default function Form({ resource, record }) {
         ...Object.fromEntries(
             resource.fields.map((field) => [
                 field.name,
-                field.type === 'image' ? null : (record?.[field.name] ?? ''),
+                // Uploads start empty rather than echoing what is already
+                // stored: the value here is what gets *added* on save.
+                field.type === 'image' ? null : field.type === 'images' ? [] : (record?.[field.name] ?? ''),
             ]),
         ),
         // Uploads mean multipart, and PHP does not parse multipart bodies on
@@ -29,6 +32,13 @@ export default function Form({ resource, record }) {
             forceFormData: true,
         });
     };
+
+    // A multi-upload reports per-file errors as `screenshots.0`, so the
+    // field's own key alone would show nothing when one file in a batch is
+    // rejected — the upload would look like it silently did nothing.
+    const fieldError = (field) =>
+        errors[field.name] ??
+        Object.entries(errors).find(([key]) => key.startsWith(`${field.name}.`))?.[1];
 
     const renderField = (field) => {
         const value = data[field.name] ?? '';
@@ -67,6 +77,17 @@ export default function Form({ resource, record }) {
             );
         }
 
+        if (field.type === 'images') {
+            return (
+                <ImageCollectionField
+                    field={field}
+                    record={record}
+                    resourceKey={resource.key}
+                    inputClass={inputClass}
+                    onPick={(files) => setData(field.name, files)}
+                />
+            );
+        }
         if (field.type === 'image') {
             return (
                 <div className="space-y-3">
@@ -124,8 +145,8 @@ export default function Form({ resource, record }) {
                             </p>
                         )}
 
-                        {errors[field.name] && (
-                            <p className="mt-1.5 text-xs text-red-400">{errors[field.name]}</p>
+                        {fieldError(field) && (
+                            <p className="mt-1.5 text-xs text-red-400">{fieldError(field)}</p>
                         )}
                     </div>
                 ))}

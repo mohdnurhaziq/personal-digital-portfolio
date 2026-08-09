@@ -26,8 +26,17 @@ class Field
     /** Newline-separated input stored as a JSON array. */
     public const LIST = 'list';
 
+    /** One uploaded image, replaced on re-upload. */
     public const IMAGE = 'image';
 
+    /** Many uploaded images, hand-ordered, deleted individually. */
+    public const IMAGES = 'images';
+
+    /**
+     * @param  array<int, string>  $rules
+     * @param  array<int, array<string, string>>  $options
+     * @param  array<int, string>  $itemRules  Per-file rules for IMAGES, applied to `name.*`.
+     */
     public function __construct(
         public readonly string $name,
         public readonly string $label,
@@ -35,11 +44,35 @@ class Field
         public readonly array $rules = ['nullable', 'string'],
         public readonly array $options = [],
         public readonly ?string $help = null,
+        // Named explicitly rather than inferred from the model. The controller
+        // used to hard-code the gallery's collection for every image field, so
+        // a second model with an image would have written into a collection it
+        // had never registered — no conversions, and no error to say so.
+        public readonly ?string $collection = null,
+        public readonly array $itemRules = [],
     ) {}
 
-    public static function make(string $name, string $label, string $type = self::TEXT, array $rules = ['nullable', 'string'], array $options = [], ?string $help = null): self
+    /**
+     * @param  array<int, string>  $rules
+     * @param  array<int, array<string, string>>  $options
+     * @param  array<int, string>  $itemRules
+     */
+    public static function make(
+        string $name,
+        string $label,
+        string $type = self::TEXT,
+        array $rules = ['nullable', 'string'],
+        array $options = [],
+        ?string $help = null,
+        ?string $collection = null,
+        array $itemRules = [],
+    ): self {
+        return new self($name, $label, $type, $rules, $options, $help, $collection, $itemRules);
+    }
+
+    public function isMedia(): bool
     {
-        return new self($name, $label, $type, $rules, $options, $help);
+        return in_array($this->type, [self::IMAGE, self::IMAGES], true);
     }
 
     /**

@@ -50,6 +50,12 @@ Route::middleware('auth')
             Route::get('{id}/edit', [ResourceController::class, 'edit'])->name('edit');
             Route::put('{id}', [ResourceController::class, 'update'])->name('update');
             Route::delete('{id}', [ResourceController::class, 'destroy'])->name('destroy');
+
+            // Uploaded files are managed against a record rather than through
+            // its form: adding happens on save, but removing and reordering
+            // act on one file and should not need the whole form submitted.
+            Route::delete('{id}/media/{media}', [ResourceController::class, 'destroyMedia'])->name('media.destroy');
+            Route::post('{id}/media/reorder', [ResourceController::class, 'reorderMedia'])->name('media.reorder');
         });
     });
 
