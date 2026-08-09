@@ -57,7 +57,17 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 - [x] Aperture blade-wipe and matrix-rain transitions, ported to React — they now play *over a real Inertia route change*, via a persistent `PortfolioLayout` that survives navigation. That is what keeps the cinematic feel without giving up shareable URLs.
 - [x] Real routing (`/`, `/programmer`, `/photographer`) so links are shareable
 - [ ] Mobile pass — actually test on a real phone this time, not just responsive CSS guesses
-- [~] Accessibility pass: `prefers-reduced-motion` honoured (reveals skip straight to visible), visible `:focus-visible` ring, gallery filters are a labelled radiogroup, fork halves leave the tab order until revealed. Still needs a real screen-reader/keyboard run-through.
+- [x] Accessibility pass: `prefers-reduced-motion` honoured (reveals skip straight to visible), gallery filters are a labelled radiogroup, fork halves leave the tab order until revealed, gallery images carry alt text and lazy-load, heading order runs H1 → H2 → H3 with no skips.
+
+  A keyboard run-through in Chrome then turned up five things the test suite could not see, all now fixed and re-verified in the browser:
+
+  - **The focus ring was invisible on the photographer path.** It was hard-coded to `--color-dev-bright` (`#8fb4ff`), which measures **1.93:1** against the cream ground — under the 3:1 WCAG 2.2 asks of a focus indicator. It is now a `--focus-ring` variable that light surfaces override with a deep gold, measured in-browser at **4.99:1**.
+  - **No `<main>` landmark on either path page.** Only the landing screen had one, so landmark navigation dropped a screen-reader user into undifferentiated content. Both paths now wrap their content in `<main id="content">`, with the nav left outside it.
+  - **No skip link.** Reaching the content past the nav and hero meant tabbing through them on every visit. `PageNav` now renders one as the first focusable element, visible only on focus, and it moves focus onto `<main>` rather than only scrolling.
+  - **Pressing Continue stranded focus.** The welcome panel becomes `aria-hidden` when the fork opens, but the button that triggered it kept focus inside that subtree — which browsers refuse to honour. Focus is now handed to the first fork half, and the button leaves the tab order.
+  - **The fork halves' focus outline was drawn off-screen.** Each half fills its side of the viewport, so the ring sat on the screen edges; it is now inset.
+
+  Still outstanding: an actual screen-reader pass (VoiceOver/NVDA) and a run on a real phone — neither is something I can do from here.
 - [x] SEO: per-route titles, meta descriptions, Open Graph + Twitter cards, and canonical URLs, all via a shared `Seo` component. **SSR is now on**, so this is in the served HTML rather than only in the JSON payload — verified with JavaScript disabled: `/programmer` renders its `<h1>`, all seven section headings, and ~1.6k characters of real text.
 
 **Running SSR (gotcha worth remembering):**

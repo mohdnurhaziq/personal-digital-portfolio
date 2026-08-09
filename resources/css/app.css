@@ -63,9 +63,26 @@
     }
 
     /* Keyboard users still need a visible focus ring even where the cursor is
-       hidden — the site must stay operable without a mouse. */
+       hidden — the site must stay operable without a mouse.
+
+       The colour is a variable rather than a fixed value because the site forks
+       onto two grounds. The navy default is fine on #070b14, but that same blue
+       on the photographer path's cream lands at roughly 1.9:1 — under the 3:1
+       WCAG 2.2 asks of a focus indicator, and in practice near-invisible. Light
+       surfaces set their own below; custom properties inherit, so one
+       declaration on the ground covers every control inside it. */
+    :root {
+        --focus-ring: var(--color-dev-bright);
+    }
+
+    .bg-cream,
+    .bg-white {
+        /* Deep gold: ~5:1 on cream, and still on-palette for this path. */
+        --focus-ring: #8a6420;
+    }
+
     :focus-visible {
-        outline: 2px solid var(--color-dev-bright);
+        outline: 2px solid var(--focus-ring);
         outline-offset: 3px;
         border-radius: 2px;
     }

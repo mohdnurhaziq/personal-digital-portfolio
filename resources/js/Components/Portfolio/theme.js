@@ -21,6 +21,7 @@ export const themes = {
         outlineLink: 'text-dev-bright border-border hover:border-dev',
         portrait: 'polaroid polaroid-dark',
         rule: 'border-border',
+        skipLink: 'bg-fg text-base',
     },
     photo: {
         page: 'bg-cream text-ink',
@@ -36,6 +37,7 @@ export const themes = {
         outlineLink: 'text-photo-deep border-cream-border hover:border-photo',
         portrait: 'polaroid',
         rule: 'border-cream-border',
+        skipLink: 'bg-ink text-cream',
     },
 };
 

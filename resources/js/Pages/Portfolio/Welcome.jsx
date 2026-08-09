@@ -1,5 +1,5 @@
 import Seo from '@/Components/Portfolio/Seo';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import HeroPolaroids from '@/Components/Portfolio/HeroPolaroids';
 import HeroRain from '@/Components/Portfolio/HeroRain';
 import PortfolioLayout, { usePortfolio } from '@/Layouts/PortfolioLayout';
@@ -13,6 +13,17 @@ function Welcome({ settings, stats }) {
     const [showFork, setShowFork] = useState(false);
     const [hovered, setHovered] = useState(null);
     const { navigate, setCursorTheme, setSceneVisible } = usePortfolio();
+    const firstForkRef = useRef(null);
+
+    // Revealing the fork hides the welcome panel from assistive tech, but the
+    // Continue button that triggered it still holds focus — a focused element
+    // inside an aria-hidden subtree, which browsers refuse to honour, and which
+    // strands a keyboard user on a control they can no longer see. Hand focus to
+    // the first half instead, which is where they were heading anyway.
+    const revealFork = () => {
+        setShowFork(true);
+        requestAnimationFrame(() => firstForkRef.current?.focus());
+    };
 
     // The 3D field sits behind the welcome panel, but the fork's two halves are
     // opaque, so keeping it running underneath them would just burn frames.
@@ -78,7 +89,11 @@ function Welcome({ settings, stats }) {
 
                     <button
                         type="button"
-                        onClick={() => setShowFork(true)}
+                        onClick={revealFork}
+                        // Matches the panel's own aria-hidden: once the fork is
+                        // up this button is invisible, so it must leave the tab
+                        // order too.
+                        tabIndex={showFork ? -1 : undefined}
                         className="mt-10 flex items-center gap-2 rounded bg-fg px-7.5 py-4 text-sm font-medium text-base transition-opacity hover:opacity-90"
                     >
                         {settings.welcome_cta}
@@ -110,6 +125,7 @@ function Welcome({ settings, stats }) {
                             </>
                         }
                         tabbable={showFork}
+                        innerRef={firstForkRef}
                         dimmed={hovered !== null && hovered !== 'dev'}
                         onHover={() => setHovered('dev')}
                         onLeave={() => setHovered(null)}
@@ -178,6 +194,7 @@ function ForkHalf({
     className,
     dimmed,
     tabbable,
+    innerRef,
     ambient,
     onHover,
     onLeave,
@@ -186,6 +203,7 @@ function ForkHalf({
     return (
         <a
             href={href}
+            ref={innerRef}
             // Until the fork is revealed it sits behind the welcome panel, so it
             // must stay out of the tab order.
             tabIndex={tabbable ? undefined : -1}
@@ -199,7 +217,10 @@ function ForkHalf({
                 event.preventDefault();
                 onActivate(event);
             }}
-            className={`relative isolate flex flex-1 flex-col justify-end overflow-hidden p-10 transition-opacity duration-300 sm:p-15 ${className} ${
+            // A half fills its side of the viewport, so a normal outline is
+            // drawn along the screen edges where it is all but invisible.
+            // Pulling it inside puts the focus indicator where it can be seen.
+            className={`relative isolate flex flex-1 flex-col justify-end overflow-hidden p-10 transition-opacity duration-300 focus-visible:-outline-offset-4 sm:p-15 ${className} ${
                 dimmed ? 'opacity-55' : 'opacity-100'
             }`}
         >
