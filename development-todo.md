@@ -126,7 +126,7 @@ Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot relo
 - Dev: `/`, `/programmer`, `/photographer` all 200, `/admin` 302s to login, Vite serves on 5173, MySQL reports 22 tables, and the full suite (70 tests) passes inside the container.
 - Prod: nginx + php-fpm + the SSR renderer all RUNNING under supervisor; all three pages genuinely server-rendered (checked against the DOM with the JSON payload stripped, not just `assertSee`); per-route titles correct; nginx serves hashed assets with `public, immutable` and a one-year max-age.
 
-**Six bugs the containers exposed that nothing else would have:**
+**Seven bugs the containers exposed that nothing else would have:**
 
 1. The `dev` stage installed no dependencies, so the anonymous `vendor`/`node_modules` volumes masked empty directories — `artisan` died on a missing autoloader and `vite` was not found. The stage now runs `composer install` and `npm ci`.
 2. `composer install --no-autoloader` in that same stage meant there was no `vendor/autoload.php` at all.
@@ -137,9 +137,26 @@ Multi-stage `Dockerfile` with a `dev` target (source bind-mounted, Vite hot relo
 
 5. **An anonymous volume is seeded from the image, not created empty.** Adding the `bootstrap/cache` volume above then broke the boot a different way: that directory does not exist in the `dev` stage (only the lock files are copied in), so Docker created it root-owned while the container runs as `app`, and package discovery died on `The /var/www/html/bootstrap/cache directory must be present and writable`. The stage now runs `mkdir -p bootstrap/cache` before the `chown`.
 
-6. **`storage:link` printed `ERROR` on every single boot.** The symlink lives in the bind-mounted repo, so it already exists on the second and every later boot. `2>/dev/null || true` did not suppress it because artisan writes that message to *stdout*, so every routine boot looked like a failure. Now guarded with `if [ ! -e public/storage ]`.
+6. **`storage:link` printed `ERROR` on every single boot.** The symlink lives in the bind-mounted repo, so it already exists on the second and every later boot. `2>/dev/null || true` did not suppress it because artisan writes that message to *stdout*, so every routine boot looked like a failure.
+
+7. **The storage symlink pointed at a path that exists only in the container.** Chasing (6) turned up the more serious version of it. `artisan storage:link` writes an *absolute* target — `/var/www/html/storage/app/public` — and because the repo is bind-mounted, that link is written straight into the host's working tree. It resolves in the container and dangles on the host, so every uploaded image 404s for anyone running the app outside Docker. The entrypoint now makes the link relative (`ln -s ../storage/app/public public/storage`), which resolves on both sides, and recreates it each boot rather than trusting one an older image may have left behind. Verified: resolves in the container *and* on the host, and the host now serves `/storage/…` with a 200 where it previously returned 403.
+
+   `ln` rather than `artisan storage:link --relative`, because that flag needs `symfony/filesystem`, which is not installed — a one-time setup command is a poor reason to add a production dependency.
 
 **Docker's own storage broke during this.** When the host disk filled, containerd's content store started throwing `input/output error` on every command — even `docker images`. Restarting Docker Desktop cleared it, and `docker builder prune -af` reclaimed 8.7 GB. Build cache only: regenerable, and it touches no images, volumes or containers — which mattered, because other projects' containers were running at the time, so a broad prune or a Docker reset was never an option.
+
+## Bug sweep
+
+A pass over every surface with the app actually running, rather than reading code. One real bug (the storage symlink, item 7 above); everything else checked out.
+
+Verified working: contact form end to end — submits, stores, mails to the log, clears the fields, shows the confirmation and moves focus to it; the honeypot is genuinely hidden (`display:none` on the wrapper, `aria-hidden`, `tabIndex -1`); `throttle:5,1` and CSRF are both live on `POST /contact`; all 14 admin routes carry `Illuminate\Auth\Middleware\Authenticate`; all 14 admin pages render 200 with zero console output, including the resource edit form and the image upload field; unknown URLs 404; both admin forms already coerce nullable columns with `?? ''`; prod stack healthy with supervisor running php-fpm, nginx and the SSR renderer, and `/programmer` genuinely server-rendered.
+
+Two things that look like problems and are not:
+
+- `THREE.Clock: This module has been deprecated` — a deprecation notice from three 0.185 reached through `@react-three/fiber` 9.7's own `state.clock`. Not our call site, and not fixable without an upstream release.
+- Broken gallery images when the site is reached on a port that `APP_URL` does not name. Media Library builds **absolute** URLs, so serving on `:8123` while `APP_URL` says `http://localhost` gives a page of 404s. Config, not code — now called out in the README.
+
+The 189 `ERROR` lines in `storage/logs/laravel.log` are historical, from development, and include failures already fixed (the `bootstrap/cache` permission error, and a React controlled-input warning from before both admin forms gained their `?? ''` guards).
 
 ## Phase 6 — Polish & launch
 

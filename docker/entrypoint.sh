@@ -67,12 +67,26 @@ fi
 
 php artisan migrate --force
 
-# Uploaded media is served from public/storage; the symlink lives inside the
-# container, so it has to be created on every boot. Guarded rather than
-# `|| true` because artisan prints "ERROR  The [public/storage] link already
-# exists" to stdout, which reads like a real failure on every single boot.
-if [ ! -e public/storage ]; then
-    php artisan storage:link
+# Uploaded media is served from public/storage, and the link has to exist
+# inside the container.
+#
+# The link is made relative, which matters more than it looks. The repo is
+# bind-mounted, so `artisan storage:link` writes an absolute
+# /var/www/html/storage/app/public — a path that exists only in the container —
+# straight into the host's working tree. Anyone then running the app on the host
+# gets a dangling symlink and a 404 for every uploaded image. A relative link
+# resolves on both sides.
+#
+# ln rather than `artisan storage:link --relative`: that flag needs
+# symfony/filesystem, and a one-time setup command is a poor reason to add a
+# production dependency. The container is Linux, so ln is unambiguous here.
+#
+# Recreated rather than trusted, because an absolute link left behind by an
+# older image still resolves in here and so would never be noticed.
+if [ -L public/storage ]; then
+    rm -f public/storage
 fi
+
+ln -s ../storage/app/public public/storage
 
 exec "$@"

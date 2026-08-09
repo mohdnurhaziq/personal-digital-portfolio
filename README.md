@@ -95,9 +95,21 @@ npm install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
+ln -s ../storage/app/public public/storage
 npm run dev          # separate terminal
 php artisan serve
 ```
+
+> The storage link is made **relative** on purpose. The Docker stack
+> bind-mounts the repo, so `php artisan storage:link` writes an absolute
+> `/var/www/html/...` — valid in the container, dangling on the host, and every
+> uploaded image 404s. If you have already hit that, `rm public/storage` and run
+> the `ln` above. (`storage:link --relative` does the same thing, but needs
+> `composer require symfony/filesystem`.)
+
+> `APP_URL` must match how you actually reach the site, port included. Media
+> Library builds **absolute** URLs from it, so serving on `:8123` while
+> `APP_URL` says `http://localhost` gives you a page of broken images.
 
 > On a machine with a leftover Herd install, the stale shims on `PATH` break
 > bare `php`/`composer`. Put Homebrew first: `export PATH=/opt/homebrew/bin:$PATH`.
