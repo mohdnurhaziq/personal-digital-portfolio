@@ -54,7 +54,9 @@ class AppServiceProvider extends ServiceProvider
      */
     private function keepContainerEnvironmentWhenServing(): void
     {
-        if (! class_exists(ServeCommand::class)) {
+        // `serve` is a console command, so there is nothing to fix up on a
+        // production request — where this would otherwise run every time.
+        if (! $this->app->runningInConsole() || ! class_exists(ServeCommand::class)) {
             return;
         }
 

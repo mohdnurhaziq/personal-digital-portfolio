@@ -172,6 +172,16 @@ Worth internalising, because this and bug 8 are the same shape: **inside a conta
 
 **Docker's own storage broke during this.** When the host disk filled, containerd's content store started throwing `input/output error` on every command — even `docker images`. Restarting Docker Desktop cleared it, and `docker builder prune -af` reclaimed 8.7 GB. Build cache only: regenerable, and it touches no images, volumes or containers — which mattered, because other projects' containers were running at the time, so a broad prune or a Docker reset was never an option.
 
+**A tenth, and the seeder had it all along.** Re-seeding orphaned every uploaded file: rows left in `media` pointing at models that no longer existed, and the files still sitting in `storage/app/public`.
+
+`DatabaseSeeder` carried `use WithoutModelEvents`. Laravel's stub offers it to keep observers quiet while seeding — but this project has no observers, and muting model events also mutes the media library's `deleting` hook, which is the only thing that removes an uploaded file. So the fix already made here — deleting row by row in `truncate()` rather than issuing a mass `delete()` — was necessary but useless on its own: the events it existed to fire were being swallowed anyway.
+
+It hides well. `$photo->delete()` from tinker cleans up correctly, so the mechanism looks fine; only a delete routed *through the seeder* misbehaves. The measurement that settled it was attaching one file and counting `Media` either side of a seed: 3 → 3 before, 4 → 3 after.
+
+The trait is gone, and `tests/Feature/SeederMediaCleanupTest.php` covers both entry points — the content seeder and `DatabaseSeeder` itself, since the bug lived in the latter. Confirmed the test earns its place by putting the trait back and watching it fail on "Re-seeding left an orphaned media row behind."
+
+Three orphans from before the fix were cleared by hand. Note that the host's SQLite database and the container's MySQL both number media from 1 and share `storage/app/public`, so their files can land in the same `1/` directory — worth knowing before concluding a stray file is a leak.
+
 ## Bug sweep
 
 A pass over every surface with the app actually running, rather than reading code. One real bug (the storage symlink, item 7 above); everything else checked out.

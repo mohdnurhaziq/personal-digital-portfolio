@@ -3,14 +3,17 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
+    // Deliberately NOT `WithoutModelEvents`. Laravel's stub offers it to keep
+    // observers quiet while seeding, but this project has none — and muting
+    // events also mutes the media library's `deleting` hook, which is what
+    // removes uploaded files. With it on, every re-seed left the rows in
+    // `media` and the files in storage behind, owned by models that no longer
+    // existed. The truncate below deletes row by row for the same reason.
     public function run(): void
     {
         $this->seedAdmin();
