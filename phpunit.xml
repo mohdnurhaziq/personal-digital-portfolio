@@ -24,22 +24,32 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
 
-        <!-- The database the suite is allowed to touch, pinned three ways.
-             `<env>` alone is not enough, and the gap destroys data:
+        <!-- The suite runs against MySQL, not SQLite, so a dialect difference
+             cannot hide a bug until production. It gets its own database:
+             RefreshDatabase migrates and truncates whatever it is pointed at,
+             and `portfolio` holds the real content.
+
+             Pinned two ways, because `<env>` alone is not enough and the gap
+             destroys data:
 
              - Without force, PHPUnit leaves an already-set variable alone, so
-               Compose's DB_CONNECTION=mysql survived into the test run.
+               Compose's DB_DATABASE=portfolio would survive into the run.
              - force fixes getenv() and $_ENV but not $_SERVER, and Laravel's
-               env() reads $_SERVER first — so it still resolved to mysql.
+               env() reads $_SERVER first — so it would still resolve to the
+               development database.
 
-             The result was RefreshDatabase truncating the live development
-             database on every `artisan test` inside the container. `<server>`
-             is the entry that actually closes it. -->
-        <env name="DB_CONNECTION" value="sqlite" force="true"/>
-        <env name="DB_DATABASE" value=":memory:" force="true"/>
+             That combination once had RefreshDatabase truncating the live
+             development data on every `artisan test` inside the container.
+
+             DB_HOST and DB_PORT are deliberately NOT pinned: the host reaches
+             MySQL on 127.0.0.1 at the published port and the container reaches
+             it at `db:3306`, so each must keep its own ambient value. Only the
+             database *name* is fixed, which is what makes the run safe. -->
+        <env name="DB_CONNECTION" value="mysql" force="true"/>
+        <env name="DB_DATABASE" value="portfolio_test" force="true"/>
         <env name="DB_URL" value="" force="true"/>
-        <server name="DB_CONNECTION" value="sqlite"/>
-        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="DB_CONNECTION" value="mysql"/>
+        <server name="DB_DATABASE" value="portfolio_test"/>
         <server name="DB_URL" value=""/>
 
         <!-- Same reasoning, different blast radius: a container or CI runner

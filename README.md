@@ -52,6 +52,18 @@ docker compose exec app vendor/bin/pint
 docker compose exec app bash
 ```
 
+The suite runs against **MySQL**, in its own `portfolio_test` database, so a
+dialect difference between the tests and production cannot hide a bug. It never
+touches `portfolio`: `phpunit.xml` pins the database *name* only, and leaves
+`DB_HOST` alone so the same file works from the host and inside the container.
+
+`portfolio_test` is created automatically when the db volume is first
+initialised. On a stack whose volume already exists, create it once:
+
+```bash
+docker compose exec -T db mysql -uroot -psecret < docker/mysql/init/01-test-database.sql
+```
+
 ### Server-side rendering
 
 The dev stack **does not** run the SSR renderer, and that is deliberate: while

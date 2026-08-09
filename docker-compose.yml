@@ -30,6 +30,8 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE:-portfolio}
+      # The test database is named in phpunit.xml rather than here: PHPUnit
+      # does no variable substitution, so it has to be a literal there.
       DB_USERNAME: ${DB_USERNAME:-portfolio}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       APP_URL: http://localhost:${APP_PORT:-8000}
@@ -66,6 +68,10 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
     volumes:
       - db-data:/var/lib/mysql
+      # Creates the separate database the test suite runs against. Only
+      # executed when the data directory is first initialised — see the file
+      # for the one-liner to apply it to an existing volume.
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # The app waits on this, so a cold `up` doesn't race the database.
       test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-p${DB_ROOT_PASSWORD:-secret}']

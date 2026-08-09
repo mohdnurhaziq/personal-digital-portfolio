@@ -194,7 +194,15 @@ MySQL 8.4 in Docker is now the only database, because it is what production will
 
 **The host already had its own MySQL, and it shadowed the container's.** Homebrew `mysqld` holds `127.0.0.1:3306`, so Docker could only bind `*:3306` on IPv6 and every host-side connection reached the *wrong server* — `Access denied for user 'portfolio'@'localhost'`, from a MySQL that has no such user. Nothing about that message points at the real cause. The container now publishes on **3307** via `DB_PORT_HOST`, and `DB_PORT` matches it; inside the container Compose still overrides `DB_HOST` with the `db` service name, so host and container reach one database.
 
-The test suite deliberately stays on in-memory SQLite: hermetic, fast, and no container needed to run it. That does leave the dialect gap above unguarded — running the suite against a MySQL test database would close it, at the cost of speed and a required container. Not done; worth deciding before launch.
+**The test suite runs on MySQL too.** Leaving it on in-memory SQLite would have kept the exact gap this consolidation set out to close: a bug that only appears on MySQL would still have reached production unseen. It now runs against a separate `portfolio_test` database on the same server.
+
+The safety property is that `phpunit.xml` pins the database **name** and nothing else. `DB_HOST` and `DB_PORT` stay ambient, because the host dials `127.0.0.1:3307` and the container dials `db:3306` — pinning either would break one of them. Pinning the name is what stops `RefreshDatabase` from truncating the real content, and it is pinned through both `<env force>` and `<server>` for the reasons in bug 9.
+
+`docker/mysql/init/01-test-database.sql` creates the database and grants the app user rights on it. MySQL's entrypoint only ever creates `MYSQL_DATABASE` and only grants on that one, and init scripts run only when the data directory is first initialised — so the file carries the one-liner for applying it to a volume that already exists.
+
+`tests/Feature/TestEnvironmentTest.php` now asserts the suite is on MySQL and on `portfolio_test`. Both previous failures in this area passed the suite while being completely wrong about which database they were using; these two assertions are the part that would have spoken up.
+
+Cost: about 4.8s for the full run against MySQL versus about 2.6s on in-memory SQLite. Worth it. Verified 81/81 on the host and in the container, with the development data — 26 settings, 4 projects, 1 user — unchanged either side of a run.
 
 Verified after the switch: host `artisan tinker` reports `mysql / portfolio / 8.4.11` with the seeded content, all three pages 200, `/admin` still authenticates, and the suite passes 79/79 both on the host and in the container.
 
