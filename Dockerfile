@@ -86,6 +86,12 @@ RUN composer install --no-scripts --prefer-dist
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# compose masks bootstrap/cache with an anonymous volume, and Docker seeds such
+# a volume from whatever is at that path in the image. If the directory is not
+# here, it is created root-owned while the container runs as `app`, and package
+# discovery then fails on a directory it cannot write to.
+RUN mkdir -p bootstrap/cache
+
 RUN chown -R "${UID}:${GID}" /var/www/html
 
 USER app

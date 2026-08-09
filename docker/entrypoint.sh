@@ -68,7 +68,11 @@ fi
 php artisan migrate --force
 
 # Uploaded media is served from public/storage; the symlink lives inside the
-# container, so it has to be created on every boot.
-php artisan storage:link 2>/dev/null || true
+# container, so it has to be created on every boot. Guarded rather than
+# `|| true` because artisan prints "ERROR  The [public/storage] link already
+# exists" to stdout, which reads like a real failure on every single boot.
+if [ ! -e public/storage ]; then
+    php artisan storage:link
+fi
 
 exec "$@"
