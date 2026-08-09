@@ -182,6 +182,22 @@ The trait is gone, and `tests/Feature/SeederMediaCleanupTest.php` covers both en
 
 Three orphans from before the fix were cleared by hand. Note that the host's SQLite database and the container's MySQL both number media from 1 and share `storage/app/public`, so their files can land in the same `1/` directory — worth knowing before concluding a stray file is a leak.
 
+## One database
+
+The SQLite path is gone. The app ran two ways — `artisan serve` on a SQLite file and Docker on MySQL — and each carried its own copy of the content. Nothing chose between them: whichever way you launched silently won. That single ambiguity produced bugs 8 and 9 above, and it is why the same gallery photo could exist in one database and not the other.
+
+MySQL 8.4 in Docker is now the only database, because it is what production will run; SQLite differs on column types, JSON handling and constraint behaviour, so a bug that only appears on MySQL would have reached production unseen.
+
+- `.env` / `.env.example` point at MySQL, and `database/database.sqlite` is deleted along with the uploads only it owned.
+- `config/database.php` and `config/queue.php` no longer fall back to `sqlite` when `DB_CONNECTION` is missing. Laravel's stock default is exactly the silent fallback that let the container migrate one database and serve another; the default is now `mysql`, so a missing variable fails loudly instead of quietly using a different store.
+- The README documents one supported way to run the app.
+
+**The host already had its own MySQL, and it shadowed the container's.** Homebrew `mysqld` holds `127.0.0.1:3306`, so Docker could only bind `*:3306` on IPv6 and every host-side connection reached the *wrong server* — `Access denied for user 'portfolio'@'localhost'`, from a MySQL that has no such user. Nothing about that message points at the real cause. The container now publishes on **3307** via `DB_PORT_HOST`, and `DB_PORT` matches it; inside the container Compose still overrides `DB_HOST` with the `db` service name, so host and container reach one database.
+
+The test suite deliberately stays on in-memory SQLite: hermetic, fast, and no container needed to run it. That does leave the dialect gap above unguarded — running the suite against a MySQL test database would close it, at the cost of speed and a required container. Not done; worth deciding before launch.
+
+Verified after the switch: host `artisan tinker` reports `mysql / portfolio / 8.4.11` with the seeded content, all three pages 200, `/admin` still authenticates, and the suite passes 79/79 both on the host and in the container.
+
 ## Bug sweep
 
 A pass over every surface with the app actually running, rather than reading code. One real bug (the storage symlink, item 7 above); everything else checked out.

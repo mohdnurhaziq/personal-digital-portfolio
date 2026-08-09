@@ -17,7 +17,11 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    // MySQL, matching production, rather than Laravel's stock `sqlite`
+    // fallback. A silent fallback is what let the container migrate one
+    // database and serve another; if DB_CONNECTION is missing now, the app
+    // fails loudly instead of quietly using a different store.
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------

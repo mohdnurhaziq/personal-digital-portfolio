@@ -12,7 +12,12 @@ without a deploy.
 - `portfolio-plan.md` — design rationale and decisions.
 - `development-todo.md` — build checklist and what is left.
 
-## Running it with Docker
+## Running it
+
+Docker is the only supported way to run this, and MySQL 8.4 is the only
+database. There is deliberately no SQLite fallback: the app used to run either
+way, each with its own store, and “which database am I on?” silently had two
+answers — see `development-todo.md` for the two bugs that cost.
 
 ```bash
 cp .env.example .env
@@ -85,20 +90,29 @@ Contact messages are stored as well as emailed, and readable at
 `/admin/messages` — losing an enquiry to a misconfigured mailer is the worst
 failure mode for a job-hunting site.
 
-## Running it without Docker
+## Running artisan from the host
 
-Needs PHP 8.3+, Composer and Node 22+.
+Optional — handy for tinker and one-off commands without `docker compose exec`.
+The stack must be up, because the database lives in the container.
 
 ```bash
 composer install
-npm install
-cp .env.example .env
-php artisan key:generate
-php artisan migrate --seed
-ln -s ../storage/app/public public/storage
-npm run dev          # separate terminal
-php artisan serve
+php artisan tinker
 ```
+
+The host reaches MySQL on `127.0.0.1:${DB_PORT_HOST}`, published by the `db`
+service; inside the container Compose overrides `DB_HOST` with the service name
+`db`. Both therefore talk to the same database.
+
+> **The published port is 3307, not 3306.** A Homebrew MySQL was already
+> listening on 127.0.0.1:3306, so the container could only bind IPv6 and
+> host-side connections silently reached the *wrong server* — "Access denied
+> for user 'portfolio'@'localhost'" from a MySQL that has no such user. Change
+> `DB_PORT_HOST` and `DB_PORT` together if 3307 is taken too.
+
+> Serving the site itself with `php artisan serve` is not supported. It needs
+> Vite, the storage link and a matching `APP_URL`, all of which the container
+> already sets up.
 
 > The storage link is made **relative** on purpose. The Docker stack
 > bind-mounts the repo, so `php artisan storage:link` writes an absolute
