@@ -25,16 +25,19 @@ export const themes = {
     },
     photo: {
         page: 'bg-cream text-ink',
-        accent: 'text-photo-deep',
-        accentDeep: 'text-photo-deep',
+        // Every gold carrying text on this path is `photo-ink`. The lighter
+        // golds stay decorative here: on cream and white they measure 3.0:1
+        // and 1.65:1, which is unreadable rather than merely subtle.
+        accent: 'text-photo-ink',
+        accentDeep: 'text-photo-ink',
         heading: 'text-ink',
         body: 'text-ink-dim',
         navMuted: 'text-ink-dim',
         card: 'bg-white border-cream-border hover:border-photo',
-        cardHeading: 'text-photo-bright',
+        cardHeading: 'text-photo-ink',
         cardBody: 'text-ink-dim',
-        tag: 'text-photo-deep border-cream-border',
-        outlineLink: 'text-photo-deep border-cream-border hover:border-photo',
+        tag: 'text-photo-ink border-cream-border',
+        outlineLink: 'text-photo-ink border-cream-border hover:border-photo',
         portrait: 'polaroid',
         rule: 'border-cream-border',
         skipLink: 'bg-ink text-cream',

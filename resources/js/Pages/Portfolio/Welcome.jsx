@@ -71,18 +71,23 @@ function Welcome({ settings, stats }) {
 
                     <dl className="mt-7.5 flex flex-wrap items-center justify-center gap-5.5">
                         {stats.map((stat, index) => (
-                            <div key={stat.label} className="flex items-center gap-5.5">
-                                {index > 0 && (
-                                    <span className="h-6.5 w-px bg-border" aria-hidden="true" />
-                                )}
-                                <div className="flex flex-col items-center gap-1">
-                                    <dt className="order-2 font-mono text-[10px] tracking-[0.06em] text-fg-dim uppercase">
-                                        {stat.label}
-                                    </dt>
-                                    <dd className="order-1 font-display text-xl font-extrabold">
-                                        {stat.value}
-                                    </dd>
-                                </div>
+                            // One div per group, and no deeper: a <dl> may hold
+                            // dt/dd pairs or divs wrapping them, but not a div
+                            // inside a div. The separator is a left border for
+                            // the same reason — a bare <span> is not allowed
+                            // in here either.
+                            <div
+                                key={stat.label}
+                                className={`flex flex-col items-center gap-1 ${
+                                    index > 0 ? 'border-l border-border pl-5.5' : ''
+                                }`}
+                            >
+                                <dt className="order-2 font-mono text-[10px] tracking-[0.06em] text-fg-dim uppercase">
+                                    {stat.label}
+                                </dt>
+                                <dd className="order-1 font-display text-xl font-extrabold">
+                                    {stat.value}
+                                </dd>
                             </div>
                         ))}
                     </dl>

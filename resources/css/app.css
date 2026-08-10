@@ -31,6 +31,14 @@
     --color-photo: #d4af37;
     --color-photo-bright: #f0c36b;
     --color-photo-deep: #b8862e;
+    /* The gold that may carry *text* on the cream and white grounds.
+
+       The two above cannot: photo-bright on a white card measures 1.65:1 and
+       photo-deep on cream 3.0:1, so card headings were effectively unreadable
+       and Lighthouse failed the page on contrast. This one measures 5.0:1 on
+       cream and 5.4:1 on white. The others stay for borders, the navy ground
+       and the cursor, where they are fine. */
+    --color-photo-ink: #8a6420;
 
     /* Photographer ground: the weekend path runs on cream, not navy */
     --color-cream: #f8f7f4;
@@ -77,8 +85,7 @@
 
     .bg-cream,
     .bg-white {
-        /* Deep gold: ~5:1 on cream, and still on-palette for this path. */
-        --focus-ring: #8a6420;
+        --focus-ring: var(--color-photo-ink);
     }
 
     :focus-visible {
