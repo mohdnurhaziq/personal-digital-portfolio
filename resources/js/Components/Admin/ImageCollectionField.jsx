@@ -33,18 +33,23 @@ export default function ImageCollectionField({ field, record, resourceKey, onPic
         setOrderedImages(images);
     }, [images]);
 
-    const restoreFocus = () => {
+    useEffect(() => {
         const target = focusTarget.current;
-        if (!target) return;
+        if (busy || !target) return;
 
-        requestAnimationFrame(() => {
-            document
-                .querySelector(
-                    `[data-media-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
-                )
-                ?.focus();
+        const frame = requestAnimationFrame(() => {
+            const button = document.querySelector(
+                `[data-media-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
+            );
+
+            if (button) {
+                button.focus();
+                focusTarget.current = null;
+            }
         });
-    };
+
+        return () => cancelAnimationFrame(frame);
+    }, [busy, orderedImages]);
 
     const move = (index, direction) => {
         const result = moveItem(orderedImages, index, direction);
@@ -75,7 +80,6 @@ export default function ImageCollectionField({ field, record, resourceKey, onPic
                 },
                 onFinish: () => {
                     setBusy(false);
-                    restoreFocus();
                 },
             },
         );

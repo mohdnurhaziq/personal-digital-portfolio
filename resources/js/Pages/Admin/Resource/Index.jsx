@@ -25,23 +25,31 @@ export default function Index({ resource, records }) {
         setOrder(records);
     }, [records]);
 
+    // Inertia can commit fresh page props after its request callbacks finish.
+    // Restore focus from an effect so it runs against the final rendered order,
+    // not a button that navigation is about to replace.
+    useEffect(() => {
+        const target = focusTarget.current;
+        if (busy || !target) return;
+
+        const frame = requestAnimationFrame(() => {
+            const button = document.querySelector(
+                `[data-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
+            );
+
+            if (button) {
+                button.focus();
+                focusTarget.current = null;
+            }
+        });
+
+        return () => cancelAnimationFrame(frame);
+    }, [busy, order]);
+
     const labelFor = (record) => {
         const value = record[resource.columns[0]];
 
         return value ? String(value) : `${resource.singular} ${record.id}`;
-    };
-
-    const restoreFocus = () => {
-        const target = focusTarget.current;
-        if (!target) return;
-
-        requestAnimationFrame(() => {
-            document
-                .querySelector(
-                    `[data-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
-                )
-                ?.focus();
-        });
     };
 
     const move = (index, direction) => {
@@ -71,7 +79,6 @@ export default function Index({ resource, records }) {
                 },
                 onFinish: () => {
                     setBusy(false);
-                    restoreFocus();
                 },
             },
         );
