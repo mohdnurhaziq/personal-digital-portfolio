@@ -5,7 +5,9 @@
     "scripts": {
         "build": "vite build && vite build --ssr",
         "build:client": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "npm run test:js",
+        "test:js": "node --test resources/js/Components/Admin/reorder.test.js"
     },
     "dependencies": {
         "@fontsource-variable/bricolage-grotesque": "^5.3.0",

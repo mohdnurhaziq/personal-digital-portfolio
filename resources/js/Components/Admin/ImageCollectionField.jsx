@@ -1,6 +1,9 @@
 import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fileInputClass } from './fileInput';
+import { focusDirectionAfterMove, movedStatus, moveItem } from './reorder';
+
+const EMPTY_IMAGES = [];
 
 /**
  * A hand-ordered set of uploaded images.
@@ -14,28 +17,67 @@ import { fileInputClass } from './fileInput';
  * record lists do: dragging works with neither a keyboard nor a touchscreen.
  */
 export default function ImageCollectionField({ field, record, resourceKey, onPick }) {
-    const images = record?.[field.name] ?? [];
+    const images = record?.[field.name] ?? EMPTY_IMAGES;
+    const [orderedImages, setOrderedImages] = useState(images);
     const [busy, setBusy] = useState(false);
     const [pending, setPending] = useState([]);
+    const [announcement, setAnnouncement] = useState('');
+    const focusTarget = useRef(null);
 
     const base = `/admin/${resourceKey}/${record?.id}/media`;
 
     // Previews are object URLs, which stay allocated until revoked.
     useEffect(() => () => pending.forEach((file) => URL.revokeObjectURL(file.preview)), [pending]);
 
+    useEffect(() => {
+        setOrderedImages(images);
+    }, [images]);
+
+    const restoreFocus = () => {
+        const target = focusTarget.current;
+        if (!target) return;
+
+        requestAnimationFrame(() => {
+            document
+                .querySelector(
+                    `[data-media-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
+                )
+                ?.focus();
+        });
+    };
+
     const move = (index, direction) => {
-        const next = [...images];
-        const target = index + direction;
+        const result = moveItem(orderedImages, index, direction);
+        if (!result || busy) return;
 
-        if (target < 0 || target >= next.length) return;
-
-        [next[index], next[target]] = [next[target], next[index]];
+        const image = orderedImages[index];
+        focusTarget.current = {
+            id: image.id,
+            direction: focusDirectionAfterMove(result.to, orderedImages.length, direction),
+        };
+        setOrderedImages(result.items);
+        setAnnouncement(`Moving ${image.name}.`);
 
         setBusy(true);
         router.post(
             `${base}/reorder`,
-            { ids: next.map((image) => image.id) },
-            { preserveScroll: true, onFinish: () => setBusy(false) },
+            { ids: result.items.map((item) => item.id) },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () =>
+                    setAnnouncement(movedStatus(image.name, result.to, orderedImages.length)),
+                onError: () => {
+                    setOrderedImages(images);
+                    setAnnouncement(
+                        `${image.name} could not be moved. The previous order was restored.`,
+                    );
+                },
+                onFinish: () => {
+                    setBusy(false);
+                    restoreFocus();
+                },
+            },
         );
     };
 
@@ -59,9 +101,13 @@ export default function ImageCollectionField({ field, record, resourceKey, onPic
 
     return (
         <div className="space-y-4">
-            {images.length > 0 && (
-                <ul className="space-y-2">
-                    {images.map((image, index) => (
+            <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {announcement}
+            </p>
+
+            {orderedImages.length > 0 && (
+                <ul aria-busy={busy} className="space-y-2">
+                    {orderedImages.map((image, index) => (
                         <li
                             key={image.id}
                             className="flex items-center gap-3 rounded border border-border bg-panel p-2"
@@ -79,26 +125,38 @@ export default function ImageCollectionField({ field, record, resourceKey, onPic
                                         first
                                     </span>
                                 )}
+                                <span
+                                    id={`image-${image.id}-position`}
+                                    className="sr-only"
+                                >
+                                    Position {index + 1} of {orderedImages.length}
+                                </span>
                             </span>
 
                             <div className="flex shrink-0 items-center gap-1">
                                 <button
                                     type="button"
                                     aria-label={`Move ${image.name} up`}
+                                    aria-describedby={`image-${image.id}-position`}
                                     disabled={busy || index === 0}
                                     onClick={() => move(index, -1)}
-                                    className="rounded border border-border px-2 py-1 text-xs text-fg-dim hover:text-fg disabled:opacity-30"
+                                    data-media-reorder-id={image.id}
+                                    data-reorder-direction="up"
+                                    className="rounded border border-border px-2 py-1 text-xs text-fg-dim hover:border-dev/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-30"
                                 >
-                                    ↑
+                                    <span aria-hidden="true">↑</span>
                                 </button>
                                 <button
                                     type="button"
                                     aria-label={`Move ${image.name} down`}
-                                    disabled={busy || index === images.length - 1}
+                                    aria-describedby={`image-${image.id}-position`}
+                                    disabled={busy || index === orderedImages.length - 1}
                                     onClick={() => move(index, 1)}
-                                    className="rounded border border-border px-2 py-1 text-xs text-fg-dim hover:text-fg disabled:opacity-30"
+                                    data-media-reorder-id={image.id}
+                                    data-reorder-direction="down"
+                                    className="rounded border border-border px-2 py-1 text-xs text-fg-dim hover:border-dev/60 hover:text-fg disabled:cursor-not-allowed disabled:opacity-30"
                                 >
-                                    ↓
+                                    <span aria-hidden="true">↓</span>
                                 </button>
                                 <button
                                     type="button"

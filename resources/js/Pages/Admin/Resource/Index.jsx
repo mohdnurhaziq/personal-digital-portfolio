@@ -1,6 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import {
+    focusDirectionAfterMove,
+    movedStatus,
+    moveItem,
+} from '@/Components/Admin/reorder';
 
 const preview = (value) => {
     if (value === null || value === undefined || value === '') return '—';
@@ -12,25 +17,63 @@ const preview = (value) => {
 export default function Index({ resource, records }) {
     const [order, setOrder] = useState(records);
     const [busy, setBusy] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+    const focusTarget = useRef(null);
 
     // Keep local order in sync when Inertia swaps in fresh records.
-    if (records !== order && records.map((r) => r.id).join() !== order.map((r) => r.id).join()) {
+    useEffect(() => {
         setOrder(records);
-    }
+    }, [records]);
+
+    const labelFor = (record) => {
+        const value = record[resource.columns[0]];
+
+        return value ? String(value) : `${resource.singular} ${record.id}`;
+    };
+
+    const restoreFocus = () => {
+        const target = focusTarget.current;
+        if (!target) return;
+
+        requestAnimationFrame(() => {
+            document
+                .querySelector(
+                    `[data-reorder-id="${target.id}"][data-reorder-direction="${target.direction}"]`,
+                )
+                ?.focus();
+        });
+    };
 
     const move = (index, direction) => {
-        const target = index + direction;
-        if (target < 0 || target >= order.length) return;
+        const result = moveItem(order, index, direction);
+        if (!result || busy) return;
 
-        const next = [...order];
-        [next[index], next[target]] = [next[target], next[index]];
-        setOrder(next);
+        const record = order[index];
+        const label = labelFor(record);
+        focusTarget.current = {
+            id: record.id,
+            direction: focusDirectionAfterMove(result.to, order.length, direction),
+        };
+        setOrder(result.items);
+        setAnnouncement(`Moving ${label}.`);
 
         setBusy(true);
         router.post(
             `/admin/${resource.key}/reorder`,
-            { ids: next.map((record) => record.id) },
-            { preserveScroll: true, onFinish: () => setBusy(false) },
+            { ids: result.items.map((item) => item.id) },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => setAnnouncement(movedStatus(label, result.to, order.length)),
+                onError: () => {
+                    setOrder(records);
+                    setAnnouncement(`${label} could not be moved. The previous order was restored.`);
+                },
+                onFinish: () => {
+                    setBusy(false);
+                    restoreFocus();
+                },
+            },
         );
     };
 
@@ -56,12 +99,26 @@ export default function Index({ resource, records }) {
                 <p className="mb-6 max-w-2xl text-sm text-fg-dim">{resource.description}</p>
             )}
 
+            {resource.sortable && order.length > 1 && (
+                <p className="mb-4 text-xs text-fg-dim">
+                    Use the Move up and Move down buttons to change the order. Changes save
+                    automatically.
+                </p>
+            )}
+
+            <p role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+                {announcement}
+            </p>
+
             {order.length === 0 ? (
                 <p className="rounded border border-dashed border-border px-4 py-10 text-center text-sm text-fg-dim">
                     Nothing here yet.
                 </p>
             ) : (
-                <div className="overflow-x-auto rounded-[10px] border border-border">
+                <div
+                    aria-busy={busy}
+                    className="overflow-x-auto rounded-[10px] border border-border"
+                >
                     <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
                         <thead>
                             <tr className="border-b border-border text-xs tracking-wide text-fg-dim uppercase">
@@ -83,24 +140,40 @@ export default function Index({ resource, records }) {
                                 >
                                     {resource.sortable && (
                                         <td className="px-4 py-3">
-                                            <div className="flex gap-1">
+                                            <div className="flex items-center gap-1">
+                                                <span
+                                                    id={`record-${record.id}-position`}
+                                                    className="mr-1 min-w-5 text-center text-xs tabular-nums text-fg-dim"
+                                                >
+                                                    {index + 1}
+                                                    <span className="sr-only">
+                                                        {' '}
+                                                        of {order.length}: {labelFor(record)}
+                                                    </span>
+                                                </span>
                                                 <button
                                                     type="button"
                                                     onClick={() => move(index, -1)}
                                                     disabled={index === 0 || busy}
-                                                    aria-label={`Move up`}
-                                                    className="rounded border border-border px-2 py-1 text-xs disabled:opacity-30"
+                                                    aria-label={`Move ${labelFor(record)} up`}
+                                                    aria-describedby={`record-${record.id}-position`}
+                                                    data-reorder-id={record.id}
+                                                    data-reorder-direction="up"
+                                                    className="rounded border border-border px-2 py-1 text-xs hover:border-dev/60 hover:text-dev-bright disabled:cursor-not-allowed disabled:opacity-30"
                                                 >
-                                                    ↑
+                                                    <span aria-hidden="true">↑</span>
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => move(index, 1)}
                                                     disabled={index === order.length - 1 || busy}
-                                                    aria-label={`Move down`}
-                                                    className="rounded border border-border px-2 py-1 text-xs disabled:opacity-30"
+                                                    aria-label={`Move ${labelFor(record)} down`}
+                                                    aria-describedby={`record-${record.id}-position`}
+                                                    data-reorder-id={record.id}
+                                                    data-reorder-direction="down"
+                                                    className="rounded border border-border px-2 py-1 text-xs hover:border-dev/60 hover:text-dev-bright disabled:cursor-not-allowed disabled:opacity-30"
                                                 >
-                                                    ↓
+                                                    <span aria-hidden="true">↓</span>
                                                 </button>
                                             </div>
                                         </td>
