@@ -247,7 +247,8 @@ The 189 `ERROR` lines in `storage/logs/laravel.log` are historical, from develop
 
 ## Phase 6 — Polish & launch
 
-- [ ] Cross-browser check
+- [x] Cross-browser smoke check — Playwright now exercises the landing, programmer, photographer and owner-login flows in Chromium, Firefox and WebKit. The isolated Chromium run also submits the contact form and performs a persisted reorder round trip, including its live-region and focus assertions. Mutating checks require `PLAYWRIGHT_ALLOW_MUTATIONS=1`, and CI enables that only after pointing the app at `portfolio_test`; a normal local run cannot silently write those records. This is desktop engine coverage, not a replacement for the real-phone and VoiceOver/NVDA passes still called out above.
+- [x] Continuous integration — pushes and pull requests to `main` run the JavaScript helper tests, client + SSR builds, the full MySQL Laravel suite and the Playwright matrix. The workflow creates an isolated Docker stack on `portfolio_test`, seeds a test-only owner, runs browsers serially for stability, uploads the Playwright report and tears down its volumes even after failure.
 - [x] Performance pass. Gallery images already carry `loading="lazy"`. Two real defects, both found by measuring in the browser rather than reading the config:
 
   - **React was inside the `three` chunk.** `manualChunks` named `three` and `gsap` but left React unnamed, so rolldown folded the shared React runtime into `three` — the built chunk held `createRoot` and `Scheduler` alongside `WebGLRenderer`. The manifest then listed `three` as a *static* import of `AdminLayout`, `ApplicationLogo`, `GuestLayout` and `Photographer`, and it was emitted as a `<link rel="modulepreload">` in the head. Every page in the app, login included, fetched 872 KB of WebGL at high priority to render a form. React now has its own named chunk; `three` is statically imported only by the lazily-loaded `Scene.jsx` and appears in no page's head preloads.

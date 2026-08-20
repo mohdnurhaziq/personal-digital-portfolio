@@ -1,0 +1,87 @@
+name: CI
+
+on:
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        timeout-minutes: 45
+        env:
+            APP_PORT: 8000
+            VITE_PORT: 5173
+            DB_PORT_HOST: 3307
+            DB_DATABASE: portfolio_test
+            DB_USERNAME: portfolio
+            DB_PASSWORD: secret
+            DB_ROOT_PASSWORD: secret
+            PLAYWRIGHT_BASE_URL: http://127.0.0.1:8000
+            PLAYWRIGHT_ADMIN_EMAIL: e2e@example.test
+            PLAYWRIGHT_ADMIN_PASSWORD: playwright-only
+            PLAYWRIGHT_ALLOW_MUTATIONS: 1
+
+        steps:
+            - uses: actions/checkout@v6
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 22
+                  cache: npm
+
+            - name: Match Docker user to the runner
+              run: |
+                  echo "APP_UID=$(id -u)" >> "$GITHUB_ENV"
+                  echo "APP_GID=$(id -g)" >> "$GITHUB_ENV"
+
+            - name: Install Node dependencies
+              run: npm ci
+
+            - name: Run JavaScript tests
+              run: npm run test:js
+
+            - name: Build client and SSR bundles
+              run: npm run build
+
+            - name: Install Playwright browsers
+              run: npx playwright install --with-deps
+
+            - name: Start the isolated Docker stack
+              run: docker compose up --detach --build app vite
+
+            - name: Wait for the application
+              run: curl --fail --retry 30 --retry-all-errors --retry-delay 2 http://127.0.0.1:8000/up
+
+            - name: Run Laravel tests
+              run: docker compose exec -T app php artisan test
+
+            - name: Seed isolated browser-test content
+              run: docker compose exec -T -e ADMIN_EMAIL=e2e@example.test -e ADMIN_PASSWORD=playwright-only app php artisan db:seed --force
+
+            - name: Run browser tests
+              run: npm run test:e2e
+
+            - name: Upload Playwright report
+              if: ${{ !cancelled() }}
+              uses: actions/upload-artifact@v5
+              with:
+                  name: playwright-report
+                  path: playwright-report/
+                  retention-days: 14
+
+            - name: Show container logs on failure
+              if: failure()
+              run: docker compose logs --no-color
+
+            - name: Stop the Docker stack
+              if: always()
+              run: docker compose down --volumes

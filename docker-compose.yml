@@ -12,8 +12,8 @@ services:
       context: .
       target: dev
       args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+        UID: ${APP_UID:-1000}
+        GID: ${APP_GID:-1000}
     volumes:
       - .:/var/www/html
       # Keep the container's installed dependencies rather than letting an
@@ -36,6 +36,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       APP_URL: http://localhost:${APP_PORT:-8000}
       VITE_DEV_SERVER_URL: http://localhost:${VITE_PORT:-5173}
+      # There is deliberately no SSR renderer in the dev stack. Disabling it
+      # explicitly avoids each request probing Vite's non-existent /render
+      # endpoint before Inertia falls back to the client.
+      INERTIA_SSR_ENABLED: 'false'
     depends_on:
       db:
         condition: service_healthy
@@ -45,8 +49,8 @@ services:
       context: .
       target: dev
       args:
-        UID: ${UID:-1000}
-        GID: ${GID:-1000}
+        UID: ${APP_UID:-1000}
+        GID: ${APP_GID:-1000}
     volumes:
       - .:/var/www/html
       - /var/www/html/node_modules

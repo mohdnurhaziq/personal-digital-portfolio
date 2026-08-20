@@ -52,6 +52,23 @@ docker compose exec app vendor/bin/pint
 docker compose exec app bash
 ```
 
+### Browser smoke tests
+
+Playwright checks the three public routes and admin authentication in Chromium,
+Firefox and WebKit. Start the Docker stack and seed an admin before running it:
+
+```bash
+npx playwright install
+PLAYWRIGHT_ADMIN_EMAIL=hello@ziq.dev \
+PLAYWRIGHT_ADMIN_PASSWORD='your local admin password' \
+npm run test:e2e
+```
+
+The contact and reorder persistence checks are intentionally skipped locally.
+They write data, so they run only when `PLAYWRIGHT_ALLOW_MUTATIONS=1` is supplied
+against an isolated database. CI creates `portfolio_test`, seeds it, and enables
+those checks automatically.
+
 The suite runs against **MySQL**, in its own `portfolio_test` database, so a
 dialect difference between the tests and production cannot hide a bug. It never
 touches `portfolio`: `phpunit.xml` pins the database *name* only, and leaves

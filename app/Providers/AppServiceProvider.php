@@ -21,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
         'DB_USERNAME',
         'DB_PASSWORD',
         'VITE_DEV_SERVER_URL',
+        'INERTIA_SSR_ENABLED',
     ];
 
     /**
