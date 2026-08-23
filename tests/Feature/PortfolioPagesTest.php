@@ -41,6 +41,8 @@ class PortfolioPagesTest extends TestCase
                 ->has('testimonials', 2)
                 ->has('certifications', 3)
                 ->has('contactLinks', 3)
+                ->where('settings.dev_ai_title', 'AI-assisted development')
+                ->where('settings.dev_ai_tools', "Codex\nClaude Code\nGraphify")
                 // Grouped server-side so the page renders one card per group.
                 ->has('techStacks.Languages & frameworks', 5)
                 ->has('techStacks.Data & infra', 4)

@@ -52,7 +52,7 @@ Build checklist for turning `portfolio-preview-v4.html` (the design reference) i
 - [x] Welcome screen (stats + bio pulled from `site_settings`) — with the Continue crossfade into the fork
 - [x] Fork screen — hover dimming, ambient digit rain, flying polaroids, per-path cursor theming (blue pulsing ring / static gold viewfinder brackets)
 - [x] Three.js background scene as a React Three Fiber component — lazy-loaded, so `three` sits in its own 892 kB chunk instead of the 305 kB entry
-- [x] Programmer page: Tech stack, Projects, Experience, About, Testimonials, Certifications, Contact — all from the DB
+- [x] Programmer page: Tech stack, AI-assisted workflow, Projects, Experience, About, Testimonials, Certifications, Contact — all from the DB
 - [x] Photographer page: Gear, Gallery with working category filters, About, Bookings, Contact — all from the DB
 - [x] Aperture blade-wipe and matrix-rain transitions, ported to React — they now play *over a real Inertia route change*, via a persistent `PortfolioLayout` that survives navigation. That is what keeps the cinematic feel without giving up shareable URLs.
 - [x] Real routing (`/`, `/programmer`, `/photographer`) so links are shareable

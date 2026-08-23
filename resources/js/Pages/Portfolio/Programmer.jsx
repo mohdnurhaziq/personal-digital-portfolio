@@ -1,5 +1,6 @@
 import Seo from '@/Components/Portfolio/Seo';
 import { useEffect } from 'react';
+import AiWorkflowSection from '@/Components/Portfolio/AiWorkflowSection';
 import Card from '@/Components/Portfolio/Card';
 import ScreenshotStrip from '@/Components/Portfolio/ScreenshotStrip';
 import ContactSection from '@/Components/Portfolio/ContactSection';
@@ -83,6 +84,8 @@ function Programmer({
                         ))}
                     </div>
                 </Section>
+
+                <AiWorkflowSection settings={settings} theme={theme} />
 
                 <Section title="Selected projects" theme={theme}>
                     <div className="grid grid-cols-6 gap-5">

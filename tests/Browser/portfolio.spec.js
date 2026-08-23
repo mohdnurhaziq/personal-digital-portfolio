@@ -37,6 +37,7 @@ const publicPages = [
     {
         path: '/programmer',
         heading: 'Programmer & project manager',
+        secondaryHeading: 'AI-assisted development',
         title: /^Programmer & project manager - /,
     },
     {
@@ -55,6 +56,11 @@ for (const publicPage of publicPages) {
         await expect(
             page.getByRole('heading', { level: 1, name: publicPage.heading }),
         ).toBeVisible();
+        if (publicPage.secondaryHeading) {
+            await expect(
+                page.getByRole('heading', { level: 2, name: publicPage.secondaryHeading }),
+            ).toBeAttached();
+        }
         await expect(page).toHaveTitle(publicPage.title);
         expect(errors).toEqual([]);
     });
