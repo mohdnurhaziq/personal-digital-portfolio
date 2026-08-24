@@ -5,7 +5,7 @@ import { fileInputClass } from '@/Components/Admin/fileInput';
 const inputClass =
     'w-full rounded border border-border bg-panel px-3 py-2 text-sm text-fg focus:border-dev focus:ring-0';
 
-const isFile = (setting) => setting.type === 'file';
+const isUpload = (setting) => setting.type === 'file' || setting.type === 'image';
 
 const formatSize = (bytes) => {
     if (!bytes) return null;
@@ -20,12 +20,12 @@ export default function Settings({ groups }) {
 
     const { data, setData, post, processing, errors, progress } = useForm({
         settings: Object.fromEntries(
-            all.filter((s) => !isFile(s)).map((s) => [s.key, s.value ?? '']),
+            all.filter((s) => !isUpload(s)).map((s) => [s.key, s.value ?? '']),
         ),
-        // File settings are uploaded, not typed: they carry a File (or null)
+        // File & image settings are uploaded, not typed: they carry a File (or null)
         // and a removal flag rather than a value.
-        uploads: Object.fromEntries(all.filter(isFile).map((s) => [s.key, null])),
-        remove: Object.fromEntries(all.filter(isFile).map((s) => [s.key, false])),
+        uploads: Object.fromEntries(all.filter(isUpload).map((s) => [s.key, null])),
+        remove: Object.fromEntries(all.filter(isUpload).map((s) => [s.key, false])),
         // Uploads mean multipart, and PHP does not parse multipart bodies on
         // PUT, so this posts with a method override. It has to live in the
         // form data — Inertia builds the request from there, not from options.
@@ -42,7 +42,69 @@ export default function Settings({ groups }) {
     const renderField = (setting) => {
         const error = errors[`settings.${setting.key}`] ?? errors[`uploads.${setting.key}`];
 
-        if (isFile(setting)) {
+        if (setting.type === 'image') {
+            return (
+                <div className="space-y-3">
+                    {setting.file && (
+                        <div className="flex items-center gap-4">
+                            <img
+                                src={setting.file.thumb_url || setting.file.url}
+                                alt={setting.label}
+                                className="aspect-3/4 w-20 rounded border border-border object-cover"
+                            />
+                            <div className="text-sm text-fg-dim">
+                                <p className="font-medium text-fg">{setting.file.name}</p>
+                                <p className="text-xs">
+                                    {[formatSize(setting.file.size), setting.file.uploaded_at]
+                                        .filter(Boolean)
+                                        .join(' · ')}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <input
+                        id={setting.key}
+                        name={setting.key}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className={fileInputClass}
+                        aria-describedby={`${setting.key}-help`}
+                        onChange={(e) =>
+                            setData('uploads', {
+                                ...data.uploads,
+                                [setting.key]: e.target.files[0] ?? null,
+                            })
+                        }
+                    />
+
+                    {setting.file && (
+                        <label className="flex items-center gap-2 text-sm text-fg-dim">
+                            <input
+                                type="checkbox"
+                                className="rounded border-border bg-panel text-dev focus:ring-0"
+                                checked={data.remove[setting.key]}
+                                onChange={(e) =>
+                                    setData('remove', {
+                                        ...data.remove,
+                                        [setting.key]: e.target.checked,
+                                    })
+                                }
+                            />
+                            Remove the current photo when saving
+                        </label>
+                    )}
+
+                    <p id={`${setting.key}-help`} className="text-xs text-fg-dim">
+                        JPG, PNG, or WebP, up to 8 MB. Displayed next to your bio.
+                    </p>
+
+                    {error && <p className="text-xs text-red-400">{error}</p>}
+                </div>
+            );
+        }
+
+        if (setting.type === 'file') {
             return (
                 <div className="space-y-3">
                     {setting.file && (

@@ -78,6 +78,7 @@ class PortfolioContentSeeder extends Seeder
             ['dev_ai_delivery', 'Pair on focused implementation, refactors, and documentation while I choose the architecture and make the trade-offs.', 'dev', 'textarea', 'AI workflow — delivery'],
             ['dev_ai_verification', 'Review every change, run the tests, inspect the browser, and stay accountable for the code that reaches production.', 'dev', 'textarea', 'AI workflow — verification'],
             ['dev_about_title', 'About', 'dev', 'text', 'About section title'],
+            ['dev_about_photo', null, 'dev', 'image', 'About section photo'],
             ['dev_about_bio', 'Placeholder bio — how you got into software and product management, what you care about building, and how you like to lead teams and ship products. Replace with your real story once you\'ve got it written.', 'dev', 'textarea', 'About bio'],
             ['dev_contact_lead', 'Open to new roles, freelance work, or just talking shop. Reach out.', 'dev', 'textarea', 'Contact lead'],
             // The upload wins when there is one; the URL is the escape hatch
@@ -90,6 +91,7 @@ class PortfolioContentSeeder extends Seeder
             ['photo_heading', 'Photography', 'photo', 'text', 'Page heading'],
             ['photo_intro', 'Portraits and street work, shot on weekends. Gear list and a curated gallery below.', 'photo', 'textarea', 'Page intro'],
             ['photo_about_title', 'Behind the photos', 'photo', 'text', 'About section title'],
+            ['photo_about_photo', null, 'photo', 'image', 'About section photo'],
             ['photo_about_bio', 'Placeholder bio — what draws you to shooting on weekends, your style, how you got into it, gear philosophy. Replace with your real story once you\'ve got it written.', 'photo', 'textarea', 'About bio'],
             ['bookings_lead', 'Available for portrait sessions, events, and small collabs on weekends. Typical turnaround is 1–2 weeks for an edited gallery.', 'photo', 'textarea', 'Bookings blurb'],
             ['bookings_cta', 'Enquire about a shoot', 'photo', 'text', 'Bookings CTA label'],

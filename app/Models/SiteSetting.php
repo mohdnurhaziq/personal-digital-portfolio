@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasImageUploads;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
@@ -10,6 +11,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class SiteSetting extends Model implements HasMedia
 {
+    use HasImageUploads;
     use InteractsWithMedia;
 
     /** The setting whose uploaded file is the resume PDF. */
@@ -17,6 +19,9 @@ class SiteSetting extends Model implements HasMedia
 
     /** Settings of this type own an uploaded file instead of a text value. */
     public const TYPE_FILE = 'file';
+
+    /** Settings of this type own an uploaded image instead of a text value. */
+    public const TYPE_IMAGE = 'image';
 
     public const COLLECTION = 'file';
 
@@ -32,15 +37,23 @@ class SiteSetting extends Model implements HasMedia
 
     /**
      * What the public pages get: the stored values, with `resume_url` resolved
-     * to the uploaded PDF when there is one. The front end then has a single
-     * key to link to and never has to know where the file came from.
+     * to the uploaded PDF when there is one, and image settings resolved to URLs.
      */
     public static function publicValues(): Collection
     {
-        $values = static::values();
+        $settings = static::query()->with('media')->get();
+        $values = $settings->pluck('value', 'key');
 
         if ($url = static::resumeUrl()) {
             $values['resume_url'] = $url;
+        }
+
+        foreach ($settings as $setting) {
+            if ($setting->type === self::TYPE_IMAGE) {
+                $media = $setting->file();
+                $values[$setting->key . '_url'] = $media ? $media->getUrl('display') : null;
+                $values[$setting->key . '_thumb_url'] = $media ? $media->getUrl('thumb') : null;
+            }
         }
 
         return $values;
@@ -73,12 +86,17 @@ class SiteSetting extends Model implements HasMedia
         return static::query()->where('key', $key)->value('value') ?? $default;
     }
 
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->registerImageConversions();
+    }
+
     public function registerMediaCollections(): void
     {
         // One file per setting: re-uploading replaces the old one rather than
         // leaving an orphan behind.
         $this->addMediaCollection(self::COLLECTION)
-            ->acceptsMimeTypes(['application/pdf'])
+            ->acceptsMimeTypes(array_merge(['application/pdf'], self::IMAGE_MIME_TYPES))
             ->singleFile();
     }
 

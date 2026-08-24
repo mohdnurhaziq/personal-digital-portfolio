@@ -137,9 +137,17 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                 <Section title={settings.photo_about_title} theme={theme}>
                     <div className="flex flex-col items-start gap-10 sm:flex-row">
                         <Reveal
-                            className={`aspect-3/4 w-45 shrink-0 rounded ${theme.portrait}`}
-                            aria-hidden="true"
-                        />
+                            className={`aspect-3/4 w-45 shrink-0 overflow-hidden rounded ${theme.portrait}`}
+                            aria-hidden={!settings.photo_about_photo_url}
+                        >
+                            {settings.photo_about_photo_url && (
+                                <img
+                                    src={settings.photo_about_photo_url}
+                                    alt={settings.owner_name ? `${settings.owner_name} portrait` : 'About portrait'}
+                                    className="size-full object-cover"
+                                />
+                            )}
+                        </Reveal>
                         <Reveal as="p" className="max-w-[480px] pt-1 leading-[1.8] text-ink-dim">
                             {settings.photo_about_bio}
                         </Reveal>

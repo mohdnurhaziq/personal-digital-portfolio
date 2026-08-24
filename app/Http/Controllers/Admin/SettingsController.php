@@ -53,28 +53,38 @@ class SettingsController extends Controller
     {
         $known = SiteSetting::query()->pluck('type', 'key');
 
-        $validated = $request->validate([
+        $rules = [
             'settings' => ['required', 'array'],
             // Only keys that already exist are writable, so a crafted request
             // cannot invent new settings.
             'settings.*' => ['nullable', 'string'],
             'uploads' => ['nullable', 'array'],
-            // mimetypes checks what the file actually is; mimes checks the
-            // extension. A renamed executable fails the first, a real PDF
-            // called .txt fails the second, and neither should be stored.
-            'uploads.*' => ['nullable', 'file', 'mimetypes:application/pdf', 'mimes:pdf', 'max:8192'],
             'remove' => ['nullable', 'array'],
             'remove.*' => ['nullable', 'boolean'],
-        ], [
-            'uploads.*.mimetypes' => 'The file must be a PDF.',
-            'uploads.*.mimes' => 'The file must be a PDF.',
-            'uploads.*.max' => 'The file may not be larger than 8 MB.',
-        ]);
+        ];
+
+        $messages = [];
+
+        foreach ($known as $key => $type) {
+            if ($type === SiteSetting::TYPE_FILE) {
+                $rules["uploads.{$key}"] = ['nullable', 'file', 'mimetypes:application/pdf', 'mimes:pdf', 'max:8192'];
+                $messages["uploads.{$key}.mimetypes"] = 'The file must be a PDF.';
+                $messages["uploads.{$key}.mimes"] = 'The file must be a PDF.';
+                $messages["uploads.{$key}.max"] = 'The file may not be larger than 8 MB.';
+            } elseif ($type === SiteSetting::TYPE_IMAGE) {
+                $rules["uploads.{$key}"] = ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'mimes:jpeg,jpg,png,webp', 'max:8192'];
+                $messages["uploads.{$key}.mimetypes"] = 'The image must be a JPEG, PNG, or WebP.';
+                $messages["uploads.{$key}.mimes"] = 'The image must be a JPEG, PNG, or WebP.';
+                $messages["uploads.{$key}.max"] = 'The image may not be larger than 8 MB.';
+            }
+        }
+
+        $validated = $request->validate($rules, $messages);
 
         foreach ($validated['settings'] as $key => $value) {
-            // File settings own an upload, not a typed value: their `value`
+            // Upload settings own a file/image, not a typed value: their `value`
             // column is written by syncFiles and must not be posted over.
-            if (! $known->has($key) || $known[$key] === SiteSetting::TYPE_FILE) {
+            if (! $known->has($key) || in_array($known[$key], [SiteSetting::TYPE_FILE, SiteSetting::TYPE_IMAGE], true)) {
                 continue;
             }
 
@@ -94,9 +104,11 @@ class SettingsController extends Controller
      */
     private function syncFiles(Request $request, Collection $known, array $remove): void
     {
-        $fileKeys = $known->filter(fn (string $type) => $type === SiteSetting::TYPE_FILE)->keys();
+        $uploadableKeys = $known->filter(
+            fn (string $type) => in_array($type, [SiteSetting::TYPE_FILE, SiteSetting::TYPE_IMAGE], true),
+        )->keys();
 
-        foreach ($fileKeys as $key) {
+        foreach ($uploadableKeys as $key) {
             $setting = SiteSetting::query()->where('key', $key)->first();
 
             if ($request->hasFile("uploads.{$key}")) {
@@ -130,7 +142,7 @@ class SettingsController extends Controller
      */
     private function presentFile(SiteSetting $setting): ?array
     {
-        if ($setting->type !== SiteSetting::TYPE_FILE) {
+        if (! in_array($setting->type, [SiteSetting::TYPE_FILE, SiteSetting::TYPE_IMAGE], true)) {
             return null;
         }
 
@@ -143,7 +155,10 @@ class SettingsController extends Controller
         return [
             'name' => $setting->value ?: $media->file_name,
             'size' => $media->size,
-            'url' => $setting->key === SiteSetting::RESUME_KEY ? route('resume') : $media->getUrl(),
+            'url' => $setting->key === SiteSetting::RESUME_KEY
+                ? route('resume')
+                : ($setting->type === SiteSetting::TYPE_IMAGE ? $media->getUrl('display') : $media->getUrl()),
+            'thumb_url' => $setting->type === SiteSetting::TYPE_IMAGE ? $media->getUrl('thumb') : null,
             'uploaded_at' => $media->created_at?->toDateString(),
         ];
     }
