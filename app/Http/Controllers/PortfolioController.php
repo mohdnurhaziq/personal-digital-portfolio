@@ -55,7 +55,7 @@ class PortfolioController extends Controller
                     'screenshots' => $project->screenshots,
                 ]),
             'experiences' => Experience::ordered()->get(['title', 'company', 'date_range', 'bullets']),
-            'testimonials' => Testimonial::ordered()->get(['quote', 'author_name', 'author_title', 'author_company']),
+            'testimonials' => Testimonial::approved()->ordered()->get(['quote', 'author_name', 'author_title', 'author_company']),
             'certifications' => Certification::ordered()->get(['name', 'issuer', 'year', 'credential_url']),
             'contactLinks' => ContactLink::forPath(ContactLink::PATH_DEV)->ordered()->get(['label', 'url']),
         ]);

@@ -193,7 +193,7 @@ function Programmer({
                                 <img
                                     src={settings.dev_about_photo_url}
                                     alt={settings.owner_name ? `${settings.owner_name} portrait` : 'About portrait'}
-                                    className="size-full object-cover"
+                                    className="absolute inset-2.5 z-1 size-[calc(100%-1.25rem)] rounded-[2px] object-cover"
                                 />
                             )}
                         </Reveal>

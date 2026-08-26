@@ -6,6 +6,7 @@ use App\Admin\AdminResources;
 use App\Admin\Field;
 use App\Admin\Resource;
 use App\Http\Controllers\Controller;
+use App\Models\TestimonialInvitation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -23,12 +24,18 @@ class ResourceController extends Controller
     public function index(string $resource): Response
     {
         $definition = $this->resolve($resource);
+        $invitationToken = $definition->key === 'testimonials'
+            ? TestimonialInvitation::available()->latest()->value('token')
+            : null;
 
         return Inertia::render('Admin/Resource/Index', [
             'resource' => $definition->toArray(),
             'records' => $definition->newQuery()->get()->map(
                 fn ($record) => $this->present($record, $definition),
             ),
+            'testimonialInvitationUrl' => $invitationToken
+                ? route('testimonial-invitations.show', $invitationToken)
+                : null,
         ]);
     }
 
@@ -244,6 +251,10 @@ class ResourceController extends Controller
                 Field::IMAGES => $record->presentMedia($field->collection),
                 default => $record->{$field->name},
             };
+        }
+
+        if ($definition->key === 'testimonials') {
+            $data['status'] = $record->status;
         }
 
         return $data;

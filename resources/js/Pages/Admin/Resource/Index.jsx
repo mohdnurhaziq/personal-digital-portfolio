@@ -14,10 +14,11 @@ const preview = (value) => {
     return text.length > 70 ? `${text.slice(0, 70)}…` : text;
 };
 
-export default function Index({ resource, records }) {
+export default function Index({ resource, records, testimonialInvitationUrl = null }) {
     const [order, setOrder] = useState(records);
     const [busy, setBusy] = useState(false);
     const [announcement, setAnnouncement] = useState('');
+    const [copied, setCopied] = useState(false);
     const focusTarget = useRef(null);
 
     // Keep local order in sync when Inertia swaps in fresh records.
@@ -88,22 +89,73 @@ export default function Index({ resource, records }) {
         router.delete(`/admin/${resource.key}/${record.id}`, { preserveScroll: true });
     };
 
+    const moderate = (record, decision) => {
+        router.post(`/admin/testimonials/${record.id}/${decision}`, {}, { preserveScroll: true });
+    };
+
+    const copyInvitation = async () => {
+        await navigator.clipboard.writeText(testimonialInvitationUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const testimonialActions = resource.key === 'testimonials';
+
     return (
         <AdminLayout
             title={resource.plural}
             actions={
-                <Link
-                    href={`/admin/${resource.key}/create`}
-                    className="rounded bg-fg px-4 py-2 text-sm font-medium text-base transition-opacity hover:opacity-90"
-                >
-                    Add {resource.singular.toLowerCase()}
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                    {testimonialActions && (
+                        <button
+                            type="button"
+                            onClick={() => router.post('/admin/testimonials/invitations')}
+                            className="rounded border border-dev/60 bg-dev/10 px-4 py-2 text-sm font-medium text-dev-bright transition-colors hover:bg-dev/15"
+                        >
+                            Generate testimonial link
+                        </button>
+                    )}
+                    <Link
+                        href={`/admin/${resource.key}/create`}
+                        className="rounded bg-fg px-4 py-2 text-sm font-medium text-base transition-opacity hover:opacity-90"
+                    >
+                        Add {resource.singular.toLowerCase()}
+                    </Link>
+                </div>
             }
         >
             <Head title={`${resource.plural} — Admin`} />
 
             {resource.description && (
                 <p className="mb-6 max-w-2xl text-sm text-fg-dim">{resource.description}</p>
+            )}
+
+            {testimonialActions && testimonialInvitationUrl && (
+                <section className="mb-6 max-w-3xl rounded border border-dev/40 bg-dev/10 p-4">
+                    <p className="font-mono text-[10px] tracking-[0.14em] text-dev-bright uppercase">
+                        Ready to share
+                    </p>
+                    <p className="mt-1 text-sm text-fg">
+                        This one-time link accepts one testimonial and closes after submission.
+                    </p>
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <input
+                            type="text"
+                            readOnly
+                            value={testimonialInvitationUrl}
+                            onFocus={(event) => event.target.select()}
+                            aria-label="Testimonial invitation link"
+                            className="min-w-0 flex-1 rounded border border-border bg-base px-3 py-2 font-mono text-xs text-fg"
+                        />
+                        <button
+                            type="button"
+                            onClick={copyInvitation}
+                            className="rounded bg-dev px-4 py-2 text-sm font-medium text-white-soft hover:opacity-90"
+                        >
+                            {copied ? 'Copied' : 'Copy link'}
+                        </button>
+                    </div>
+                </section>
             )}
 
             {resource.sortable && order.length > 1 && (
@@ -203,6 +255,18 @@ export default function Index({ resource, records }) {
                                                     ) : (
                                                         <span className="text-fg-dim">—</span>
                                                     )
+                                                ) : column === 'status' ? (
+                                                    <span
+                                                        className={`inline-flex rounded-full border px-2 py-1 font-mono text-[10px] tracking-wide uppercase ${
+                                                            record.status === 'approved'
+                                                                ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300'
+                                                                : record.status === 'rejected'
+                                                                  ? 'border-red-400/30 bg-red-400/10 text-red-300'
+                                                                  : 'border-amber-300/30 bg-amber-300/10 text-amber-200'
+                                                        }`}
+                                                    >
+                                                        {record.status}
+                                                    </span>
                                                 ) : (
                                                     preview(record[column])
                                                 )}
@@ -212,6 +276,24 @@ export default function Index({ resource, records }) {
 
                                     <td className="px-4 py-3">
                                         <div className="flex justify-end gap-3">
+                                            {testimonialActions && record.status !== 'approved' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => moderate(record, 'approve')}
+                                                    className="text-emerald-300 hover:underline"
+                                                >
+                                                    Approve
+                                                </button>
+                                            )}
+                                            {testimonialActions && record.status !== 'rejected' && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => moderate(record, 'reject')}
+                                                    className="text-amber-200 hover:underline"
+                                                >
+                                                    Reject
+                                                </button>
+                                            )}
                                             <Link
                                                 href={`/admin/${resource.key}/${record.id}/edit`}
                                                 className="text-dev-bright hover:underline"

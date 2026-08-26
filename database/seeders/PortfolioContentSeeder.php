@@ -13,6 +13,7 @@ use App\Models\Stat;
 use App\Models\Tag;
 use App\Models\TechStack;
 use App\Models\Testimonial;
+use App\Models\TestimonialInvitation;
 use Illuminate\Database\Seeder;
 
 /**
@@ -43,6 +44,7 @@ class PortfolioContentSeeder extends Seeder
     {
         foreach ([
             SiteSetting::class, Stat::class, Tag::class, TechStack::class,
+            TestimonialInvitation::class,
             Project::class, Experience::class, Testimonial::class,
             Certification::class, GearItem::class, GalleryPhoto::class,
             ContactLink::class,

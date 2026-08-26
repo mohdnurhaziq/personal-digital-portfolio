@@ -98,7 +98,8 @@ class AdminResources
                 model: Testimonial::class,
                 singular: 'Testimonial',
                 plural: 'Testimonials',
-                columns: ['author_name', 'author_company'],
+                description: 'Published recommendations and anonymous submissions awaiting review.',
+                columns: ['author_name', 'author_company', 'status'],
                 navSection: 'dev',
                 fields: [
                     Field::make('quote', 'Quote', Field::TEXTAREA, ['required', 'string']),

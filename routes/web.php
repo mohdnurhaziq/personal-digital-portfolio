@@ -4,10 +4,13 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\MessagesController;
 use App\Http\Controllers\Admin\ResourceController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\TestimonialInvitationController as AdminTestimonialInvitationController;
+use App\Http\Controllers\Admin\TestimonialModerationController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResumeController;
+use App\Http\Controllers\TestimonialInvitationController;
 use Illuminate\Support\Facades\Route;
 
 // Public portfolio. Each path gets a real URL so links are shareable — the
@@ -27,6 +30,12 @@ Route::post('/contact', [ContactController::class, 'store'])
     ->middleware('throttle:5,1')
     ->name('contact.store');
 
+Route::get('/testimonial/{token}', [TestimonialInvitationController::class, 'show'])
+    ->name('testimonial-invitations.show');
+Route::post('/testimonial/{token}', [TestimonialInvitationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('testimonial-invitations.store');
+
 // Owner-only content management. Everything here is behind auth; there is no
 // public registration, so the only account is the seeded one.
 Route::middleware('auth')
@@ -41,6 +50,13 @@ Route::middleware('auth')
 
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        Route::post('testimonials/invitations', [AdminTestimonialInvitationController::class, 'store'])
+            ->name('testimonial-invitations.store');
+        Route::post('testimonials/{testimonial}/approve', [TestimonialModerationController::class, 'approve'])
+            ->name('testimonials.approve');
+        Route::post('testimonials/{testimonial}/reject', [TestimonialModerationController::class, 'reject'])
+            ->name('testimonials.reject');
 
         Route::prefix('{resource}')->name('resource.')->group(function () {
             Route::get('/', [ResourceController::class, 'index'])->name('index');
