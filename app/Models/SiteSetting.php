@@ -51,8 +51,8 @@ class SiteSetting extends Model implements HasMedia
         foreach ($settings as $setting) {
             if ($setting->type === self::TYPE_IMAGE) {
                 $media = $setting->file();
-                $values[$setting->key . '_url'] = $media ? $media->getUrl('display') : null;
-                $values[$setting->key . '_thumb_url'] = $media ? $media->getUrl('thumb') : null;
+                $values[$setting->key.'_url'] = $media ? $media->getUrl('display') : null;
+                $values[$setting->key.'_thumb_url'] = $media ? $media->getUrl('thumb') : null;
             }
         }
 

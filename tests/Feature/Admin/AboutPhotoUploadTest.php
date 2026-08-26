@@ -41,8 +41,8 @@ class AboutPhotoUploadTest extends TestCase
 
         $this->get('/programmer')->assertInertia(
             fn (AssertableInertia $page) => $page
-                ->where('settings.dev_about_photo_url', fn ($url) => !empty($url))
-                ->where('settings.dev_about_photo_thumb_url', fn ($url) => !empty($url))
+                ->where('settings.dev_about_photo_url', fn ($url) => ! empty($url))
+                ->where('settings.dev_about_photo_thumb_url', fn ($url) => ! empty($url))
         );
     }
 
@@ -61,8 +61,8 @@ class AboutPhotoUploadTest extends TestCase
 
         $this->get('/photographer')->assertInertia(
             fn (AssertableInertia $page) => $page
-                ->where('settings.photo_about_photo_url', fn ($url) => !empty($url))
-                ->where('settings.photo_about_photo_thumb_url', fn ($url) => !empty($url))
+                ->where('settings.photo_about_photo_url', fn ($url) => ! empty($url))
+                ->where('settings.photo_about_photo_thumb_url', fn ($url) => ! empty($url))
         );
     }
 

@@ -21,10 +21,16 @@ function useSceneProfile() {
             return;
         }
 
-        // A phone that can technically run WebGL still shouldn't run the
-        // desktop particle count.
         const small = window.matchMedia('(max-width: 720px)').matches;
         const coarse = window.matchMedia('(pointer: coarse)').matches;
+
+        // On small screens or touch/coarse pointers (mobile & tablets), skip WebGL
+        // entirely to avoid loading 880 kB of 3D bundle and blocking mobile main threads.
+        // The CSS radial gradient renders immediately and cleanly behind the content.
+        if (small || coarse) {
+            setProfile(null);
+            return;
+        }
 
         let hasWebgl = false;
         try {
@@ -41,7 +47,7 @@ function useSceneProfile() {
             return;
         }
 
-        setProfile({ particleCount: small || coarse ? 600 : 1800 });
+        setProfile({ particleCount: 1800 });
     }, [reducedMotion]);
 
     return profile;

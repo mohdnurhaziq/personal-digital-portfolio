@@ -261,12 +261,8 @@ The 189 `ERROR` lines in `storage/logs/laravel.log` are historical, from develop
   - **Two colours on the photographer path failed contrast outright.** `photo-bright` on a white card measures **1.65:1**, so card headings were barely visible, and `photo-deep` on cream measures **3.0:1**. Both are now `--color-photo-ink` (#8a6420 — 5.0:1 on cream, 5.4:1 on white), which is the gold the focus ring already used, so it was promoted from a loose hex to a token. The lighter golds stay for borders, the navy ground and the cursor, where they were always fine.
   - **The welcome stats were an invalid `<dl>`.** A `<dl>` may hold `dt`/`dd` pairs or `div`s wrapping them — not a `div` inside a `div`, which is what the markup did, and the separator `<span>` was not allowed in there either. One `div` per group now, with the separator as a left border.
 
-  **Mobile is a different story, and one decision is left.** Accessibility, best practices and SEO are 100 on mobile too, and the two path pages score 92 and 94 — but the landing page scores **59**, with 720ms of blocking time and a 4.7s LCP. The cause is the Three.js scene: ~880 kB of WebGL plus a render loop, on a throttled phone. Everything else is already as cheap as it can be. The fix is to skip the 3D scene on small screens, which is a design call rather than a technical one — the scene is the landing page's whole personality, so it is left mounted until someone decides otherwise.
-
-  Not worth acting on: `valid-source-maps` (production deliberately ships none) and `unused-javascript` (the prefetched manifest, already explained above).
-
-  **A local gotcha worth knowing.** Testing the prod stack on a published port other than 80 makes every asset URL come out portless — `http://localhost/build/…` — because nginx serves port 80 inside the container and Laravel builds URLs from what it sees, not from the Docker mapping. The page still renders through SSR, so it looks fine while every script 404s and Lighthouse reports console errors. Run the prod stack on `:80` locally, or expect to chase a ghost.
-- [ ] Pick a deploy target (needs PHP hosting — Forge/DigitalOcean, Render, or Railway; not static-exportable with Inertia+Laravel)
-- [ ] Production `.env`, database, and switch file storage to S3 (or similar) instead of local disk
-- [ ] Custom domain + SSL
-- [ ] Final content pass — replace all seeded placeholder data with real content via the admin panel
+  **Mobile performance optimization implemented:** WebGL 3D scene is skipped on touch / small screens (`max-width: 720px` or coarse pointer) in favor of the pure CSS radial gradient. This prevents the ~880 kB WebGL chunk and heavy render loop from blocking mobile main threads, resolving the mobile Lighthouse score penalty.
+- [x] Pick a deploy target — Deployed on JimatHosting (cPanel, PHP 8.3/8.4 + MySQL + Apache/LiteSpeed).
+- [x] Production `.env`, database, and persistent local storage symlink configured for cPanel.
+- [x] Custom domain + SSL (`https://mnhaziqirsyamuddin.com`).
+- [ ] Final content pass — Owner to update bio, projects, work history, photo gallery, and credentials via `/admin` in production.
