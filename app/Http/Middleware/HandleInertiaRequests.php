@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
                 ->map(fn (Resource $resource) => [
                     'key' => $resource->key,
                     'label' => $resource->plural,
+                    'section' => $resource->navSection,
                 ])
                 ->values() : null,
             'status' => fn () => $request->session()->get('status'),

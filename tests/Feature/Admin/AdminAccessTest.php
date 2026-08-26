@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -39,6 +40,27 @@ class AdminAccessTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get('/admin')
             ->assertOk();
+    }
+
+    public function test_sidebar_resources_are_assigned_to_clear_site_sections(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get('/admin')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('adminNav', fn ($items) => collect($items)
+                    ->mapWithKeys(fn ($item) => [$item['key'] => $item['section']])
+                    ->all() === [
+                        'projects' => 'dev',
+                        'experiences' => 'dev',
+                        'testimonials' => 'dev',
+                        'certifications' => 'dev',
+                        'gear' => 'photo',
+                        'tech-stacks' => 'dev',
+                        'tags' => 'shared',
+                        'stats' => 'site',
+                        'contact-links' => 'shared',
+                        'gallery-photos' => 'photo',
+                    ]));
     }
 
     public function test_public_registration_is_not_routed(): void

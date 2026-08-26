@@ -28,6 +28,7 @@ class Resource
         public readonly array $columns,
         public readonly bool $sortable = true,
         public readonly ?string $description = null,
+        public readonly string $navSection = 'shared',
     ) {}
 
     public function newQuery()
@@ -120,6 +121,7 @@ class Resource
             'singular' => $this->singular,
             'plural' => $this->plural,
             'description' => $this->description,
+            'nav_section' => $this->navSection,
             'sortable' => $this->sortable,
             'columns' => $this->columns,
             'fields' => array_map(fn (Field $f) => $f->toArray(), $this->fields),

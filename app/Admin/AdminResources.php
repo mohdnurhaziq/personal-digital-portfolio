@@ -52,6 +52,7 @@ class AdminResources
                 singular: 'Project',
                 plural: 'Projects',
                 description: 'Selected work shown on the programmer path.',
+                navSection: 'dev',
                 columns: ['title', 'size'],
                 fields: [
                     Field::make('title', 'Title', rules: ['required', 'string', 'max:255']),
@@ -83,6 +84,7 @@ class AdminResources
                 plural: 'Experience',
                 description: 'Work history timeline.',
                 columns: ['title', 'company', 'date_range'],
+                navSection: 'dev',
                 fields: [
                     Field::make('title', 'Job title', rules: ['required', 'string', 'max:255']),
                     Field::make('company', 'Company', rules: ['required', 'string', 'max:255']),
@@ -97,6 +99,7 @@ class AdminResources
                 singular: 'Testimonial',
                 plural: 'Testimonials',
                 columns: ['author_name', 'author_company'],
+                navSection: 'dev',
                 fields: [
                     Field::make('quote', 'Quote', Field::TEXTAREA, ['required', 'string']),
                     Field::make('author_name', 'Author', rules: ['required', 'string', 'max:255']),
@@ -111,6 +114,7 @@ class AdminResources
                 singular: 'Certification',
                 plural: 'Certifications',
                 columns: ['name', 'issuer', 'year'],
+                navSection: 'dev',
                 fields: [
                     Field::make('name', 'Name', rules: ['required', 'string', 'max:255']),
                     Field::make('issuer', 'Issuing body', rules: ['required', 'string', 'max:255']),
@@ -125,6 +129,7 @@ class AdminResources
                 singular: 'Gear item',
                 plural: 'Gear',
                 description: 'Camera, lenses and editing tools on the photographer path.',
+                navSection: 'photo',
                 columns: ['category', 'value'],
                 fields: [
                     Field::make('category', 'Heading', rules: ['required', 'string', 'max:255'], help: 'e.g. Camera, Lenses, Editing.'),
@@ -138,6 +143,7 @@ class AdminResources
                 singular: 'Tech stack item',
                 plural: 'Tech stack',
                 description: 'Icons shown in the tech stack grid.',
+                navSection: 'dev',
                 columns: ['group', 'name', 'icon_slug'],
                 fields: [
                     Field::make('group', 'Group', rules: ['required', 'string', 'max:255'], help: 'Items are grouped into one card per heading.'),
@@ -152,6 +158,7 @@ class AdminResources
                 singular: 'Tag',
                 plural: 'Teaser tags',
                 description: 'The pill row above the first section of each path.',
+                navSection: 'shared',
                 columns: ['label', 'path'],
                 fields: [
                     Field::make('label', 'Label', rules: ['required', 'string', 'max:255']),
@@ -165,6 +172,7 @@ class AdminResources
                 singular: 'Stat',
                 plural: 'Welcome stats',
                 description: 'The numbers on the welcome screen.',
+                navSection: 'site',
                 columns: ['value', 'label'],
                 fields: [
                     Field::make('value', 'Value', rules: ['required', 'string', 'max:255'], help: 'Shown verbatim, e.g. "5+".'),
@@ -178,6 +186,7 @@ class AdminResources
                 singular: 'Contact link',
                 plural: 'Contact links',
                 columns: ['label', 'url', 'path'],
+                navSection: 'shared',
                 fields: [
                     Field::make('label', 'Label', rules: ['required', 'string', 'max:255']),
                     Field::make('url', 'URL', rules: ['required', 'string', 'max:255'], help: 'A full URL, or mailto:you@example.com.'),
@@ -191,6 +200,7 @@ class AdminResources
                 singular: 'Photo',
                 plural: 'Gallery',
                 description: 'Photos and the category their filter button uses.',
+                navSection: 'photo',
                 // Thumbnail first: it is the only way to tell photos apart at a glance.
                 columns: ['image', 'title', 'category'],
                 fields: [

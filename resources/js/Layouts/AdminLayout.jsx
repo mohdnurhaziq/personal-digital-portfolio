@@ -1,6 +1,45 @@
 import { Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
+const navigationSections = [
+    {
+        key: 'dev',
+        label: 'Programmer',
+        context: 'Weekdays',
+        labelClass: 'text-dev-bright',
+        activeClass: 'bg-dev/15 text-dev-bright',
+        hoverClass: 'hover:text-dev-bright',
+    },
+    {
+        key: 'photo',
+        label: 'Photographer',
+        context: 'Weekends',
+        labelClass: 'text-photo-bright',
+        activeClass: 'bg-photo/10 text-photo-bright',
+        hoverClass: 'hover:text-photo-bright',
+    },
+    {
+        key: 'shared',
+        label: 'Both paths',
+        context: 'Shared content',
+        labelClass: 'text-fg',
+        activeClass: 'bg-panel text-fg',
+        hoverClass: 'hover:text-fg',
+    },
+    {
+        key: 'site',
+        label: 'Site & admin',
+        context: 'Global',
+        labelClass: 'text-fg',
+        activeClass: 'bg-panel text-fg',
+        hoverClass: 'hover:text-fg',
+        extraItems: [
+            { href: '/admin/messages', label: 'Messages' },
+            { href: '/admin/settings', label: 'Site settings' },
+        ],
+    },
+];
+
 /**
  * Admin chrome. Built on the site's own tokens rather than a generic admin
  * theme, so editing content happens in the same visual language as the site.
@@ -20,7 +59,7 @@ export default function AdminLayout({ title, actions, children }) {
         return () => clearTimeout(timer);
     }, [status]);
 
-    const navItem = (href, label) => {
+    const navItem = (href, label, section = navigationSections[0]) => {
         const active = current === href || current.startsWith(`${href}/`);
 
         return (
@@ -29,8 +68,8 @@ export default function AdminLayout({ title, actions, children }) {
                 href={href}
                 className={`block rounded px-3 py-2 text-sm transition-colors ${
                     active
-                        ? 'bg-dev/15 text-dev-bright'
-                        : 'text-fg-dim hover:bg-panel hover:text-fg'
+                        ? section.activeClass
+                        : `text-fg-dim hover:bg-panel ${section.hoverClass}`
                 }`}
             >
                 {label}
@@ -46,13 +85,51 @@ export default function AdminLayout({ title, actions, children }) {
                         HAZIQ <span className="text-fg-dim">/ ADMIN</span>
                     </Link>
 
-                    <nav className="mt-6 space-y-0.5">
+                    <nav className="mt-6" aria-label="Admin navigation">
                         {navItem('/admin', 'Overview')}
-                        {(adminNav ?? []).map((item) =>
-                            navItem(`/admin/${item.key}`, item.label),
-                        )}
-                        {navItem('/admin/messages', 'Messages')}
-                        {navItem('/admin/settings', 'Site settings')}
+
+                        <div className="mt-6 space-y-6">
+                            {navigationSections.map((section) => {
+                                const resources = (adminNav ?? []).filter(
+                                    (item) => item.section === section.key,
+                                );
+                                const items = [
+                                    ...resources.map((item) => ({
+                                        href: `/admin/${item.key}`,
+                                        label: item.label,
+                                    })),
+                                    ...(section.extraItems ?? []),
+                                ];
+
+                                if (items.length === 0) return null;
+
+                                return (
+                                    <section
+                                        key={section.key}
+                                        aria-labelledby={`admin-nav-${section.key}`}
+                                        className="border-l border-border pl-2"
+                                    >
+                                        <div className="mb-1.5 px-3">
+                                            <p
+                                                id={`admin-nav-${section.key}`}
+                                                className={`font-mono text-[10px] tracking-[0.14em] uppercase ${section.labelClass}`}
+                                            >
+                                                {section.label}
+                                            </p>
+                                            <p className="mt-0.5 text-[10px] text-fg-dim">
+                                                {section.context}
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-0.5">
+                                            {items.map((item) =>
+                                                navItem(item.href, item.label, section),
+                                            )}
+                                        </div>
+                                    </section>
+                                );
+                            })}
+                        </div>
                     </nav>
 
                     <div className="mt-8 border-t border-border pt-4 text-xs text-fg-dim">
