@@ -183,10 +183,14 @@ function Programmer({
                     )}
                 </Section>
 
-                <Section title={settings.dev_about_title} theme={theme}>
-                    <div className="flex flex-col items-start gap-10 sm:flex-row">
+                <Section
+                    title={settings.dev_about_title}
+                    theme={theme}
+                    className="!pt-8 !pb-10 sm:!pt-10 sm:!pb-12"
+                >
+                    <div className="flex flex-col items-start gap-8 md:flex-row md:gap-12 xl:gap-16">
                         <Reveal
-                            className={`aspect-3/4 w-45 shrink-0 overflow-hidden rounded ${theme.portrait}`}
+                            className={`aspect-3/4 w-48 shrink-0 overflow-hidden rounded sm:w-56 xl:w-70 ${theme.portrait}`}
                             aria-hidden={!settings.dev_about_photo_url}
                         >
                             {settings.dev_about_photo_url && (
@@ -199,7 +203,7 @@ function Programmer({
                         </Reveal>
                         <Reveal
                             as="p"
-                            className="max-w-[480px] pt-1 leading-[1.8] text-fg-dim"
+                            className="w-full min-w-0 max-w-3xl flex-1 pt-1 text-[15px] leading-[1.85] text-fg-dim sm:text-[16px]"
                         >
                             {settings.dev_about_bio}
                         </Reveal>
