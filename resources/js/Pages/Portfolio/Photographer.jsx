@@ -70,6 +70,14 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                 span="small"
                                 title={item.category}
                             >
+                                {item.image_url && (
+                                    <img
+                                        src={item.image_url}
+                                        alt=""
+                                        loading="lazy"
+                                        className="mb-4 aspect-4/3 w-full rounded border border-cream-border object-cover"
+                                    />
+                                )}
                                 <p className={`text-sm ${theme.cardBody}`}>{item.value}</p>
                             </Card>
                         ))}
@@ -134,10 +142,14 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                     )}
                 </Section>
 
-                <Section title={settings.photo_about_title} theme={theme}>
-                    <div className="flex flex-col items-start gap-10 sm:flex-row">
+                <Section
+                    title={settings.photo_about_title}
+                    theme={theme}
+                    className="!pt-8 !pb-10 sm:!pt-10 sm:!pb-12"
+                >
+                    <div className="flex flex-col items-start gap-8 md:flex-row md:gap-12 xl:gap-16">
                         <Reveal
-                            className={`aspect-3/4 w-45 shrink-0 overflow-hidden rounded ${theme.portrait}`}
+                            className={`aspect-3/4 w-48 shrink-0 overflow-hidden rounded sm:w-56 xl:w-70 ${theme.portrait}`}
                             aria-hidden={!settings.photo_about_photo_url}
                         >
                             {settings.photo_about_photo_url && (
@@ -148,7 +160,10 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                 />
                             )}
                         </Reveal>
-                        <Reveal as="p" className="max-w-[480px] pt-1 leading-[1.8] text-ink-dim">
+                        <Reveal
+                            as="p"
+                            className="w-full min-w-0 max-w-3xl flex-1 pt-1 text-[15px] leading-[1.85] text-ink-dim sm:text-[16px]"
+                        >
                             {settings.photo_about_bio}
                         </Reveal>
                     </div>

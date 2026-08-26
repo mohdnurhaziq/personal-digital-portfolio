@@ -69,7 +69,12 @@ class PortfolioController extends Controller
         return Inertia::render('Portfolio/Photographer', [
             'settings' => SiteSetting::publicValues(),
             'tags' => Tag::forPath(Tag::PATH_PHOTO)->ordered()->pluck('label'),
-            'gear' => GearItem::ordered()->get(['category', 'value']),
+            'gear' => GearItem::ordered()->with('media')->get()
+                ->map(fn (GearItem $item) => [
+                    'category' => $item->category,
+                    'value' => $item->value,
+                    'image_url' => $item->image_url,
+                ]),
             // Eager load media so the grid doesn't fire a query per tile.
             'photos' => GalleryPhoto::published()->ordered()->with('media')->get()
                 ->map(fn (GalleryPhoto $photo) => [

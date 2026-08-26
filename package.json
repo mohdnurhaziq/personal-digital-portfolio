@@ -7,7 +7,7 @@
         "build:client": "vite build",
         "dev": "vite",
         "test": "npm run test:js",
-        "test:js": "node --test resources/js/Components/Admin/reorder.test.js",
+        "test:js": "node --test resources/js/Components/Admin/*.test.js",
         "test:e2e": "playwright test",
         "test:e2e:ui": "playwright test --ui"
     },

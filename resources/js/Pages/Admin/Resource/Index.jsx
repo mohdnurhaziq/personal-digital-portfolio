@@ -115,12 +115,12 @@ export default function Index({ resource, records, testimonialInvitationUrl = nu
                             Generate testimonial link
                         </button>
                     )}
-                    <Link
+                    <a
                         href={`/admin/${resource.key}/create`}
                         className="rounded bg-fg px-4 py-2 text-sm font-medium text-base transition-opacity hover:opacity-90"
                     >
                         Add {resource.singular.toLowerCase()}
-                    </Link>
+                    </a>
                 </div>
             }
         >

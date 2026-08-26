@@ -78,6 +78,29 @@ test('admin routes redirect guests and accept the seeded owner login', async ({ 
     await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
 });
 
+test('admin can open and submit the searchable tech stack form', async ({ browserName, page }) => {
+    test.skip(browserName !== 'chromium', 'The persistence round trip mutates the isolated database once.');
+    test.skip(!allowMutations, 'Set PLAYWRIGHT_ALLOW_MUTATIONS=1 only against an isolated database.');
+
+    await logIn(page);
+    await visit(page, '/admin/tech-stacks');
+
+    await page.getByRole('link', { name: 'Add tech stack item' }).click();
+    await expect(page).toHaveURL(/\/admin\/tech-stacks\/create$/);
+
+    await page.getByLabel('Group').fill('Browser test');
+    await page.getByRole('combobox', { name: 'Search technology' }).fill('Bun');
+    await page.getByRole('option', { name: 'Bun', exact: true }).click();
+    await page.getByRole('button', { name: 'Create tech stack item' }).click();
+
+    await expect(page).toHaveURL(/\/admin\/tech-stacks$/);
+    const createdRow = page.locator('tbody tr').filter({ hasText: 'Browser test' });
+    await expect(createdRow).toContainText('Bun');
+
+    await createdRow.getByRole('button', { name: 'Delete' }).click();
+    await expect(createdRow).toHaveCount(0);
+});
+
 test('contact submission confirms and clears the form', async ({ browserName, page }) => {
     test.skip(browserName !== 'chromium', 'The successful submission mutates the isolated database once.');
     test.skip(!allowMutations, 'Set PLAYWRIGHT_ALLOW_MUTATIONS=1 only against an isolated database.');

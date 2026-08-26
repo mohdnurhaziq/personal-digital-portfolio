@@ -34,7 +34,7 @@ class Field
 
     /**
      * @param  array<int, string>  $rules
-     * @param  array<int, array<string, string>>  $options
+     * @param  array<int, array<string, mixed>>  $options
      * @param  array<int, string>  $itemRules  Per-file rules for IMAGES, applied to `name.*`.
      */
     public function __construct(
@@ -50,11 +50,12 @@ class Field
         // had never registered — no conversions, and no error to say so.
         public readonly ?string $collection = null,
         public readonly array $itemRules = [],
+        public readonly bool $searchable = false,
     ) {}
 
     /**
      * @param  array<int, string>  $rules
-     * @param  array<int, array<string, string>>  $options
+     * @param  array<int, array<string, mixed>>  $options
      * @param  array<int, string>  $itemRules
      */
     public static function make(
@@ -66,8 +67,9 @@ class Field
         ?string $help = null,
         ?string $collection = null,
         array $itemRules = [],
+        bool $searchable = false,
     ): self {
-        return new self($name, $label, $type, $rules, $options, $help, $collection, $itemRules);
+        return new self($name, $label, $type, $rules, $options, $help, $collection, $itemRules, $searchable);
     }
 
     public function isMedia(): bool
@@ -87,6 +89,7 @@ class Field
             'options' => $this->options,
             'help' => $this->help,
             'required' => in_array('required', $this->rules, true),
+            'searchable' => $this->searchable,
         ];
     }
 }

@@ -55,6 +55,7 @@ class AdminAccessTest extends TestCase
                         'testimonials' => 'dev',
                         'certifications' => 'dev',
                         'gear' => 'photo',
+                        'photo-categories' => 'photo',
                         'tech-stacks' => 'dev',
                         'tags' => 'shared',
                         'stats' => 'site',

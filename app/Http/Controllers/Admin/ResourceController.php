@@ -6,7 +6,11 @@ use App\Admin\AdminResources;
 use App\Admin\Field;
 use App\Admin\Resource;
 use App\Http\Controllers\Controller;
+use App\Models\GalleryPhoto;
+use App\Models\PhotoCategory;
 use App\Models\TestimonialInvitation;
+use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -52,7 +56,7 @@ class ResourceController extends Controller
     public function store(Request $request, string $resource): RedirectResponse
     {
         $definition = $this->resolve($resource);
-        $data = $request->validate($definition->rules(), [], $definition->validationAttributes());
+        $data = $this->validated($request, $definition);
 
         $record = $definition->newModel();
         $this->fill($record, $data, $definition);
@@ -83,9 +87,8 @@ class ResourceController extends Controller
     public function update(Request $request, string $resource, int $id): RedirectResponse
     {
         $definition = $this->resolve($resource);
-        $data = $request->validate($definition->rules(), [], $definition->validationAttributes());
-
         $record = $definition->find($id);
+        $data = $this->validated($request, $definition, $record);
         $this->fill($record, $data, $definition);
         $record->save();
 
@@ -99,11 +102,48 @@ class ResourceController extends Controller
     public function destroy(string $resource, int $id): RedirectResponse
     {
         $definition = $this->resolve($resource);
-        $definition->find($id)->delete();
+        $record = $definition->find($id);
+
+        if ($record instanceof PhotoCategory && GalleryPhoto::where('category', $record->slug)->exists()) {
+            return back()->with(
+                'status',
+                "{$record->name} is still used by gallery photos. Reassign or delete those photos first.",
+            );
+        }
+
+        $record->delete();
 
         return redirect()
             ->route('admin.resource.index', $definition->key)
             ->with('status', "{$definition->singular} deleted.");
+    }
+
+    /**
+     * Validate a resource form, including rules that depend on the record
+     * currently being edited.
+     *
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, Resource $definition, ?Model $record = null): array
+    {
+        $rules = $definition->rules();
+
+        if ($definition->key === 'photo-categories') {
+            $rules['name'][] = function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                $slug = Str::slug((string) $value);
+                $duplicate = PhotoCategory::where('slug', $slug)
+                    ->when($record, fn ($query) => $query->where('id', '!=', $record->getKey()))
+                    ->exists();
+
+                if ($slug === '') {
+                    $fail('The category name must contain letters or numbers.');
+                } elseif ($duplicate) {
+                    $fail('A category with this name already exists.');
+                }
+            };
+        }
+
+        return $request->validate($rules, [], $definition->validationAttributes());
     }
 
     /**
@@ -151,7 +191,7 @@ class ResourceController extends Controller
             }
 
             // Lists are typed one item per line and stored as a JSON array.
-            $record->{$field->name} = $field->type === Field::LIST
+            $value = $field->type === Field::LIST
                 ? Str::of((string) ($data[$field->name] ?? ''))
                     ->explode("\n")
                     ->map(fn (string $line) => trim($line))
@@ -159,6 +199,20 @@ class ResourceController extends Controller
                     ->values()
                     ->all()
                 : $data[$field->name];
+
+            $record->{$field->name} = $value;
+
+            // Select options may own canonical companion values. The tech
+            // stack dropdown uses this to set its display name from the chosen
+            // icon slug, preventing mismatched labels and logos.
+            if ($field->type === Field::SELECT) {
+                $option = collect($field->options)
+                    ->first(fn (array $option) => (string) $option['value'] === (string) $value);
+
+                foreach ($option['set'] ?? [] as $attribute => $companionValue) {
+                    $record->{$attribute} = $companionValue;
+                }
+            }
         }
 
         if ($definition->sortable && isset($data['sort_order'])) {
@@ -251,6 +305,15 @@ class ResourceController extends Controller
                 Field::IMAGES => $record->presentMedia($field->collection),
                 default => $record->{$field->name},
             };
+        }
+
+        // Index columns can be derived from another editable field and do not
+        // need their own form control (for example a tech stack's canonical
+        // name, which comes from the Technology dropdown).
+        foreach ($definition->columns as $column) {
+            if (! array_key_exists($column, $data)) {
+                $data[$column] = $record->{$column};
+            }
         }
 
         if ($definition->key === 'testimonials') {

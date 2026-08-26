@@ -1,6 +1,7 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ImageCollectionField from '@/Components/Admin/ImageCollectionField';
+import TechnologyCombobox from '@/Components/Admin/TechnologyCombobox';
 import { fileInputClass } from '@/Components/Admin/fileInput';
 
 const inputClass =
@@ -62,6 +63,17 @@ export default function Form({ resource, record }) {
         }
 
         if (field.type === 'select') {
+            if (field.searchable) {
+                return (
+                    <TechnologyCombobox
+                        field={field}
+                        value={value}
+                        onChange={(nextValue) => setData(field.name, nextValue)}
+                        className={inputClass}
+                    />
+                );
+            }
+
             return (
                 <select
                     {...common}

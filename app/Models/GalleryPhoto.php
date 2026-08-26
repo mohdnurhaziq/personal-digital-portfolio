@@ -16,12 +16,6 @@ class GalleryPhoto extends Model implements HasMedia
     use HasSortOrder;
     use InteractsWithMedia;
 
-    /**
-     * Drives the gallery filter buttons. 'all' is rendered by the front end and
-     * is deliberately not a storable category.
-     */
-    public const CATEGORIES = ['portrait', 'street', 'landscape', 'event'];
-
     public const COLLECTION = 'photo';
 
     protected $guarded = [];

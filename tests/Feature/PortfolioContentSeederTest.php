@@ -7,6 +7,7 @@ use App\Models\ContactLink;
 use App\Models\Experience;
 use App\Models\GalleryPhoto;
 use App\Models\GearItem;
+use App\Models\PhotoCategory;
 use App\Models\Project;
 use App\Models\SiteSetting;
 use App\Models\Stat;
@@ -42,6 +43,7 @@ class PortfolioContentSeederTest extends TestCase
         $this->assertSame(2, Testimonial::count());
         $this->assertSame(3, Certification::count());
         $this->assertSame(3, GearItem::count());
+        $this->assertSame(4, PhotoCategory::count());
         $this->assertSame(8, GalleryPhoto::count());
     }
 
@@ -68,9 +70,9 @@ class PortfolioContentSeederTest extends TestCase
             GalleryPhoto::ordered()->pluck('category')->all(),
         );
 
-        foreach (GalleryPhoto::pluck('category') as $category) {
-            $this->assertContains($category, GalleryPhoto::CATEGORIES);
-        }
+        $this->assertEmpty(
+            GalleryPhoto::pluck('category')->diff(PhotoCategory::pluck('slug')),
+        );
     }
 
     public function test_projects_keep_the_asymmetric_grid_rhythm(): void

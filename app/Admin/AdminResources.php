@@ -7,6 +7,7 @@ use App\Models\ContactLink;
 use App\Models\Experience;
 use App\Models\GalleryPhoto;
 use App\Models\GearItem;
+use App\Models\PhotoCategory;
 use App\Models\Project;
 use App\Models\Stat;
 use App\Models\Tag;
@@ -19,13 +20,116 @@ use App\Models\Testimonial;
 class AdminResources
 {
     /**
+     * Common development, infrastructure, design and delivery tools available
+     * in the admin dropdown. Values are Simple Icons slugs; AWS is handled by
+     * the portfolio's local Font Awesome fallback.
+     *
+     * @var array<string, string>
+     */
+    private const TECH_STACKS = [
+        'adobephotoshop' => 'Adobe Photoshop',
+        'alpinedotjs' => 'Alpine.js',
+        'android' => 'Android',
+        'angular' => 'Angular',
+        'ansible' => 'Ansible',
+        'apache' => 'Apache',
+        'apachekafka' => 'Apache Kafka',
+        'asana' => 'Asana',
+        'amazonaws' => 'AWS',
+        'amazondynamodb' => 'AWS DynamoDB',
+        'amazonec2' => 'AWS EC2',
+        'amazons3' => 'AWS S3',
+        'bootstrap' => 'Bootstrap',
+        'bun' => 'Bun',
+        'c' => 'C',
+        'cplusplus' => 'C++',
+        'clickup' => 'ClickUp',
+        'cloudflare' => 'Cloudflare',
+        'codeigniter' => 'CodeIgniter',
+        'composer' => 'Composer',
+        'css' => 'CSS',
+        'deno' => 'Deno',
+        'digitalocean' => 'DigitalOcean',
+        'docker' => 'Docker',
+        'dotnet' => '.NET',
+        'electron' => 'Electron',
+        'elasticsearch' => 'Elasticsearch',
+        'express' => 'Express',
+        'figma' => 'Figma',
+        'firebase' => 'Firebase',
+        'git' => 'Git',
+        'github' => 'GitHub',
+        'githubactions' => 'GitHub Actions',
+        'gitlab' => 'GitLab',
+        'go' => 'Go',
+        'googlecloud' => 'Google Cloud',
+        'grafana' => 'Grafana',
+        'graphql' => 'GraphQL',
+        'html5' => 'HTML5',
+        'inertia' => 'Inertia.js',
+        'insomnia' => 'Insomnia',
+        'javascript' => 'JavaScript',
+        'jenkins' => 'Jenkins',
+        'jira' => 'Jira',
+        'jquery' => 'jQuery',
+        'kubernetes' => 'Kubernetes',
+        'laravel' => 'Laravel',
+        'linear' => 'Linear',
+        'linux' => 'Linux',
+        'livewire' => 'Livewire',
+        'mariadb' => 'MariaDB',
+        'microsoftazure' => 'Microsoft Azure',
+        'microsoftteams' => 'Microsoft Teams',
+        'mongodb' => 'MongoDB',
+        'mui' => 'MUI',
+        'mysql' => 'MySQL',
+        'nestdotjs' => 'NestJS',
+        'nextdotjs' => 'Next.js',
+        'nginx' => 'NGINX',
+        'nodedotjs' => 'Node.js',
+        'notion' => 'Notion',
+        'npm' => 'npm',
+        'nuxt' => 'Nuxt',
+        'openjdk' => 'Java / OpenJDK',
+        'php' => 'PHP',
+        'pnpm' => 'pnpm',
+        'postgresql' => 'PostgreSQL',
+        'postman' => 'Postman',
+        'prometheus' => 'Prometheus',
+        'python' => 'Python',
+        'rabbitmq' => 'RabbitMQ',
+        'react' => 'React',
+        'redis' => 'Redis',
+        'rust' => 'Rust',
+        'sass' => 'Sass',
+        'slack' => 'Slack',
+        'sqlite' => 'SQLite',
+        'supabase' => 'Supabase',
+        'swagger' => 'Swagger',
+        'symfony' => 'Symfony',
+        'tailwindcss' => 'Tailwind CSS',
+        'terraform' => 'Terraform',
+        'threedotjs' => 'Three.js',
+        'trello' => 'Trello',
+        'typescript' => 'TypeScript',
+        'ubuntu' => 'Ubuntu',
+        'valkey' => 'Valkey',
+        'vercel' => 'Vercel',
+        'vite' => 'Vite',
+        'vuedotjs' => 'Vue.js',
+        'wordpress' => 'WordPress',
+        'yarn' => 'Yarn',
+    ];
+
+    /**
      * @return array<string, resource>
      */
     public static function all(): array
     {
-        static $resources = null;
-
-        return $resources ??= collect(self::definitions())
+        // Definitions include database-backed photo category options. Building
+        // them per request keeps a newly added category available immediately,
+        // including under long-running PHP workers.
+        return collect(self::definitions())
             ->keyBy(fn (Resource $resource) => $resource->key)
             ->all();
     }
@@ -131,10 +235,24 @@ class AdminResources
                 plural: 'Gear',
                 description: 'Camera, lenses and editing tools on the photographer path.',
                 navSection: 'photo',
-                columns: ['category', 'value'],
+                columns: ['image', 'category', 'value'],
                 fields: [
+                    Field::make('image', 'Photo', Field::IMAGE, ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192'], help: 'JPEG, PNG or WebP, up to 8 MB.', collection: GearItem::COLLECTION),
                     Field::make('category', 'Heading', rules: ['required', 'string', 'max:255'], help: 'e.g. Camera, Lenses, Editing.'),
                     Field::make('value', 'Detail', rules: ['required', 'string', 'max:255']),
+                ],
+            ),
+
+            new Resource(
+                key: 'photo-categories',
+                model: PhotoCategory::class,
+                singular: 'Photo category',
+                plural: 'Photo categories',
+                description: 'Filter categories available when adding photos to the gallery.',
+                navSection: 'photo',
+                columns: ['name'],
+                fields: [
+                    Field::make('name', 'Name', rules: ['required', 'string', 'max:80'], help: 'The URL-safe category value is generated automatically.'),
                 ],
             ),
 
@@ -148,8 +266,15 @@ class AdminResources
                 columns: ['group', 'name', 'icon_slug'],
                 fields: [
                     Field::make('group', 'Group', rules: ['required', 'string', 'max:255'], help: 'Items are grouped into one card per heading.'),
-                    Field::make('name', 'Name', rules: ['required', 'string', 'max:255']),
-                    Field::make('icon_slug', 'Icon slug', rules: ['nullable', 'string', 'max:255'], help: 'Simple Icons slug, e.g. "laravel". Unknown slugs just show the label.'),
+                    Field::make(
+                        'icon_slug',
+                        'Technology',
+                        Field::SELECT,
+                        ['required', 'string', 'in:'.implode(',', array_keys(self::TECH_STACKS))],
+                        self::techStackOptions(),
+                        'Choose the technology; its display name, icon and official brand colour are applied automatically.',
+                        searchable: true,
+                    ),
                 ],
             ),
 
@@ -208,12 +333,48 @@ class AdminResources
                     Field::make('image', 'Photo', Field::IMAGE, ['nullable', 'image', 'mimes:jpeg,jpg,png,webp', 'max:8192'], help: 'JPEG, PNG or WebP, up to 8 MB.', collection: GalleryPhoto::COLLECTION),
                     Field::make('title', 'Title', rules: ['nullable', 'string', 'max:255']),
                     Field::make('caption', 'Caption', Field::TEXTAREA),
-                    Field::make('category', 'Category', Field::SELECT, ['required', 'in:'.implode(',', GalleryPhoto::CATEGORIES)], array_map(
-                        fn (string $c) => ['value' => $c, 'label' => ucfirst($c)],
-                        GalleryPhoto::CATEGORIES,
-                    )),
+                    Field::make(
+                        'category',
+                        'Category',
+                        Field::SELECT,
+                        ['required', 'exists:photo_categories,slug'],
+                        self::photoCategoryOptions(),
+                        'Manage these options under Photographer → Photo categories.',
+                    ),
                 ],
             ),
         ];
+    }
+
+    /**
+     * Each option carries server-side companion values. ResourceController
+     * applies them when the selection is saved, so name and icon cannot drift.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function techStackOptions(): array
+    {
+        return collect(self::TECH_STACKS)
+            ->map(fn (string $name, string $slug) => [
+                'value' => $slug,
+                'label' => $name,
+                'set' => ['name' => $name],
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{value: string, label: string}>
+     */
+    private static function photoCategoryOptions(): array
+    {
+        return PhotoCategory::ordered()
+            ->get(['name', 'slug'])
+            ->map(fn (PhotoCategory $category) => [
+                'value' => $category->slug,
+                'label' => $category->name,
+            ])
+            ->all();
     }
 }
