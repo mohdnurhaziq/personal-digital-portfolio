@@ -56,7 +56,14 @@ class PortfolioController extends Controller
                 ]),
             'experiences' => Experience::ordered()->get(['title', 'company', 'date_range', 'bullets']),
             'testimonials' => Testimonial::approved()->ordered()->get(['quote', 'author_name', 'author_title', 'author_company']),
-            'certifications' => Certification::ordered()->get(['name', 'issuer', 'year', 'credential_url']),
+            'certifications' => Certification::ordered()->with('media')->get()
+                ->map(fn (Certification $certification) => [
+                    'name' => $certification->name,
+                    'issuer' => $certification->issuer,
+                    'year' => $certification->year,
+                    'credential_url' => $certification->credential_url,
+                    'attachment' => $certification->attachment,
+                ]),
             'contactLinks' => ContactLink::forPath(ContactLink::PATH_DEV)->ordered()->get(['label', 'url']),
         ]);
     }

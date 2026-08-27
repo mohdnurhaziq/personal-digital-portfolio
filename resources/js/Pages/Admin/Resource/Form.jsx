@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ImageCollectionField from '@/Components/Admin/ImageCollectionField';
 import TechnologyCombobox from '@/Components/Admin/TechnologyCombobox';
@@ -16,7 +16,11 @@ export default function Form({ resource, record }) {
                 field.name,
                 // Uploads start empty rather than echoing what is already
                 // stored: the value here is what gets *added* on save.
-                field.type === 'image' ? null : field.type === 'images' ? [] : (record?.[field.name] ?? ''),
+                field.type === 'image' || field.type === 'file'
+                    ? null
+                    : field.type === 'images'
+                      ? []
+                      : (record?.[field.name] ?? ''),
             ]),
         ),
         // Uploads mean multipart, and PHP does not parse multipart bodies on
@@ -114,7 +118,61 @@ export default function Form({ resource, record }) {
                         {...common}
                         className={fileInputClass}
                         type="file"
-                        accept="image/jpeg,image/png,image/webp"
+                        accept={field.accept ?? 'image/jpeg,image/png,image/webp'}
+                        onChange={(e) => setData(field.name, e.target.files[0] ?? null)}
+                    />
+                </div>
+            );
+        }
+        if (field.type === 'file') {
+            const existing = record?.[field.name];
+
+            return (
+                <div className="space-y-3">
+                    {existing && (
+                        <div className="rounded border border-border bg-panel p-3">
+                            <div className="flex items-center gap-3">
+                                {existing.kind === 'image' ? (
+                                    <img
+                                        src={existing.preview_url}
+                                        alt=""
+                                        className="h-20 w-24 rounded object-contain"
+                                    />
+                                ) : (
+                                    <span className="flex h-20 w-16 items-center justify-center rounded border border-red-400/30 bg-red-400/10 font-mono text-xs text-red-300">
+                                        PDF
+                                    </span>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <a
+                                        href={existing.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="block truncate text-sm text-dev-bright hover:underline"
+                                    >
+                                        {existing.name}
+                                    </a>
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            router.delete(
+                                                `/admin/${resource.key}/${record.id}/media/${existing.id}`,
+                                                { preserveScroll: true },
+                                            )
+                                        }
+                                        className="mt-2 text-xs text-fg-dim hover:text-red-300"
+                                    >
+                                        Remove current file
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    <input
+                        {...common}
+                        className={fileInputClass}
+                        type="file"
+                        accept={field.accept}
                         onChange={(e) => setData(field.name, e.target.files[0] ?? null)}
                     />
                 </div>

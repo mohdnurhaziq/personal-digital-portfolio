@@ -2,6 +2,7 @@ import Seo from '@/Components/Portfolio/Seo';
 import { useEffect } from 'react';
 import AiWorkflowSection from '@/Components/Portfolio/AiWorkflowSection';
 import Card from '@/Components/Portfolio/Card';
+import CertificationPreview from '@/Components/Portfolio/CertificationPreview';
 import ScreenshotStrip from '@/Components/Portfolio/ScreenshotStrip';
 import ContactSection from '@/Components/Portfolio/ContactSection';
 import PageHero from '@/Components/Portfolio/PageHero';
@@ -244,6 +245,10 @@ function Programmer({
                                 span="small"
                                 title={cert.name}
                             >
+                                <CertificationPreview
+                                    attachment={cert.attachment}
+                                    name={cert.name}
+                                />
                                 <p className={`text-sm ${theme.cardBody}`}>
                                     {[cert.issuer, cert.year].filter(Boolean).join(' — ')}
                                 </p>

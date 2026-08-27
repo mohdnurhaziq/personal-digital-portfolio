@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\Certification;
 use App\Models\Experience;
 use App\Models\GalleryPhoto;
 use App\Models\GearItem;
@@ -193,6 +194,72 @@ class ResourceCrudTest extends TestCase
         $this->get('/photographer')
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->where('gear.0.image_url', fn ($url) => ! empty($url)));
+    }
+
+    public function test_certification_accepts_pdf_or_image_and_exposes_a_public_preview(): void
+    {
+        Storage::fake('public');
+
+        $this->get('/admin/certifications/create')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('resource.fields', fn ($fields) => collect($fields)
+                    ->contains(fn ($field) => $field['name'] === 'attachment'
+                        && $field['type'] === 'file'
+                        && str_contains($field['accept'], 'application/pdf'))));
+
+        $certification = Certification::ordered()->firstOrFail();
+        $fields = [
+            'name' => $certification->name,
+            'issuer' => $certification->issuer,
+            'year' => $certification->year,
+        ];
+
+        $this->put("/admin/certifications/{$certification->id}", [
+            ...$fields,
+            'attachment' => UploadedFile::fake()->createWithContent(
+                'certificate.pdf',
+                "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF",
+            ),
+        ])->assertRedirect('/admin/certifications');
+
+        $certification->refresh();
+
+        $this->assertTrue($certification->hasMedia(Certification::COLLECTION));
+        $this->assertSame('pdf', $certification->attachment['kind']);
+
+        $this->get('/programmer')
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('certifications.0.attachment.kind', 'pdf')
+                ->where('certifications.0.attachment.url', fn ($url) => ! empty($url)));
+
+        // The collection is single-file: changing format replaces rather than
+        // accumulating a stale PDF behind the new image.
+        $this->put("/admin/certifications/{$certification->id}", [
+            ...$fields,
+            'attachment' => UploadedFile::fake()->image('certificate.jpg', 1200, 900),
+        ])->assertRedirect('/admin/certifications');
+
+        $certification->refresh();
+
+        $this->assertCount(1, $certification->getMedia(Certification::COLLECTION));
+        $this->assertSame('image', $certification->attachment['kind']);
+        $this->assertNotEmpty($certification->attachment['preview_url']);
+    }
+
+    public function test_certification_rejects_unsupported_attachments(): void
+    {
+        Storage::fake('public');
+
+        $certification = Certification::ordered()->firstOrFail();
+
+        $this->put("/admin/certifications/{$certification->id}", [
+            'name' => $certification->name,
+            'issuer' => $certification->issuer,
+            'year' => $certification->year,
+            'attachment' => UploadedFile::fake()->create('notes.txt', 10, 'text/plain'),
+        ])->assertSessionHasErrors('attachment');
+
+        $this->assertFalse($certification->fresh()->hasMedia(Certification::COLLECTION));
     }
 
     public function test_photo_categories_can_be_managed_and_drive_the_gallery_dropdown(): void

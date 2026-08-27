@@ -29,6 +29,9 @@ class Field
     /** One uploaded image, replaced on re-upload. */
     public const IMAGE = 'image';
 
+    /** One uploaded document or image, replaced on re-upload. */
+    public const FILE = 'file';
+
     /** Many uploaded images, hand-ordered, deleted individually. */
     public const IMAGES = 'images';
 
@@ -51,6 +54,7 @@ class Field
         public readonly ?string $collection = null,
         public readonly array $itemRules = [],
         public readonly bool $searchable = false,
+        public readonly ?string $accept = null,
     ) {}
 
     /**
@@ -68,13 +72,14 @@ class Field
         ?string $collection = null,
         array $itemRules = [],
         bool $searchable = false,
+        ?string $accept = null,
     ): self {
-        return new self($name, $label, $type, $rules, $options, $help, $collection, $itemRules, $searchable);
+        return new self($name, $label, $type, $rules, $options, $help, $collection, $itemRules, $searchable, $accept);
     }
 
     public function isMedia(): bool
     {
-        return in_array($this->type, [self::IMAGE, self::IMAGES], true);
+        return in_array($this->type, [self::IMAGE, self::IMAGES, self::FILE], true);
     }
 
     /**
@@ -90,6 +95,7 @@ class Field
             'help' => $this->help,
             'required' => in_array('required', $this->rules, true),
             'searchable' => $this->searchable,
+            'accept' => $this->accept,
         ];
     }
 }

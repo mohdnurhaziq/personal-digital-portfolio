@@ -235,8 +235,8 @@ class ResourceController extends Controller
                 continue;
             }
 
-            // IMAGE is a single-file collection, so this replaces. IMAGES
-            // appends, and new files land after the ones already there.
+            // IMAGE and FILE are single-file collections, so they replace.
+            // IMAGES appends, and new files land after the ones already there.
             $files = $field->type === Field::IMAGES
                 ? $request->file($field->name)
                 : [$request->file($field->name)];
@@ -259,7 +259,7 @@ class ResourceController extends Controller
         // collection cannot be deleted by guessing the number.
         $record->media()->whereKey($media)->firstOrFail()->delete();
 
-        return back()->with('status', 'Image deleted.');
+        return back()->with('status', 'File deleted.');
     }
 
     /**
@@ -303,6 +303,7 @@ class ResourceController extends Controller
                 Field::LIST => collect($record->{$field->name} ?? [])->implode("\n"),
                 Field::IMAGE => $record->thumb_url ?? null,
                 Field::IMAGES => $record->presentMedia($field->collection),
+                Field::FILE => $record->{$field->name},
                 default => $record->{$field->name},
             };
         }

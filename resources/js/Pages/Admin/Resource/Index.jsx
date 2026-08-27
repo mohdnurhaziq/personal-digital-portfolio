@@ -255,6 +255,34 @@ export default function Index({ resource, records, testimonialInvitationUrl = nu
                                                     ) : (
                                                         <span className="text-fg-dim">—</span>
                                                     )
+                                                ) : field?.type === 'file' ? (
+                                                    record[column] ? (
+                                                        record[column].kind === 'image' ? (
+                                                            <a
+                                                                href={record[column].url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                aria-label={`Open ${labelFor(record)} file`}
+                                                            >
+                                                                <img
+                                                                    src={record[column].preview_url}
+                                                                    alt=""
+                                                                    className="h-12 w-12 rounded object-contain"
+                                                                />
+                                                            </a>
+                                                        ) : (
+                                                            <a
+                                                                href={record[column].url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="inline-flex rounded border border-red-400/30 bg-red-400/10 px-2 py-1 font-mono text-[10px] text-red-300 hover:border-red-300/60"
+                                                            >
+                                                                PDF ↗
+                                                            </a>
+                                                        )
+                                                    ) : (
+                                                        <span className="text-fg-dim">—</span>
+                                                    )
                                                 ) : column === 'status' ? (
                                                     <span
                                                         className={`inline-flex rounded-full border px-2 py-1 font-mono text-[10px] tracking-wide uppercase ${

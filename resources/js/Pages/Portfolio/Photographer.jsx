@@ -5,6 +5,7 @@ import ContactSection from '@/Components/Portfolio/ContactSection';
 import PageHero from '@/Components/Portfolio/PageHero';
 import PageNav from '@/Components/Portfolio/PageNav';
 import Reveal from '@/Components/Portfolio/Reveal';
+import ScreenshotViewer from '@/Components/Portfolio/ScreenshotViewer';
 import Section from '@/Components/Portfolio/Section';
 import TagRow from '@/Components/Portfolio/TagRow';
 import { themeFor } from '@/Components/Portfolio/theme';
@@ -16,6 +17,7 @@ const label = (category) => category.charAt(0).toUpperCase() + category.slice(1)
 
 function Photographer({ settings, tags, gear, photos, categories, contactLinks }) {
     const [active, setActive] = useState('all');
+    const [photoIndex, setPhotoIndex] = useState(null);
     const { navigate, setCursorTheme } = usePortfolio();
 
     useEffect(() => {
@@ -25,6 +27,10 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
     const visible = useMemo(
         () => (active === 'all' ? photos : photos.filter((photo) => photo.category === active)),
         [active, photos],
+    );
+    const viewablePhotos = useMemo(
+        () => visible.filter((photo) => photo.thumb_url && photo.image_url),
+        [visible],
     );
 
     return (
@@ -101,7 +107,10 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                     type="button"
                                     role="radio"
                                     aria-checked={isActive}
-                                    onClick={() => setActive(category)}
+                                    onClick={() => {
+                                        setActive(category);
+                                        setPhotoIndex(null);
+                                    }}
                                     className={`rounded-full border px-4 py-2 font-mono text-xs transition-colors ${
                                         isActive
                                             ? 'border-photo bg-photo/10 text-ink'
@@ -125,17 +134,40 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                     '--float-delay': `${(index % 5) * 0.4}s`,
                                 }}
                             >
-                                {photo.thumb_url && (
-                                    <img
-                                        src={photo.thumb_url}
-                                        alt={photo.title ?? ''}
-                                        loading="lazy"
-                                        className="absolute inset-2.5 z-1 size-[calc(100%-1.25rem)] rounded-[2px] object-cover"
-                                    />
+                                {photo.thumb_url && photo.image_url && (
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setPhotoIndex(
+                                                viewablePhotos.findIndex(
+                                                    (viewable) => viewable.id === photo.id,
+                                                ),
+                                            )
+                                        }
+                                        aria-label={`View ${photo.title || 'gallery photo'} fullscreen`}
+                                        aria-haspopup="dialog"
+                                        className="group absolute inset-2.5 z-1 cursor-zoom-in overflow-hidden rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photo"
+                                    >
+                                        <img
+                                            src={photo.thumb_url}
+                                            alt={photo.title ?? ''}
+                                            loading="lazy"
+                                            className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                                        />
+                                    </button>
                                 )}
                             </li>
                         ))}
                     </ul>
+
+                    <ScreenshotViewer
+                        screenshots={viewablePhotos}
+                        index={photoIndex}
+                        title="Photography gallery"
+                        itemLabel="photo"
+                        onClose={() => setPhotoIndex(null)}
+                        onIndexChange={setPhotoIndex}
+                    />
 
                     {visible.length === 0 && (
                         <p className={`mt-6 text-sm ${theme.body}`}>No photos in this category yet.</p>
