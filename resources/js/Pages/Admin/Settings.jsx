@@ -23,7 +23,7 @@ const sectionDefinitions = [
         key: 'photographer',
         label: 'Photographer',
         eyebrow: 'Weekend portfolio',
-        description: 'Page intro, photographer bio, booking details, and contact copy.',
+        description: 'Section visibility, page intro, photographer bio, bookings, and contact copy.',
         groups: ['photo'],
         activeClass: 'border-photo/60 bg-photo/10',
         accentClass: 'text-photo-bright',
@@ -110,6 +110,51 @@ export default function Settings({ groups }) {
 
     const renderField = (setting) => {
         const error = errors[`settings.${setting.key}`] ?? errors[`uploads.${setting.key}`];
+
+        if (setting.type === 'boolean') {
+            const enabled = data.settings[setting.key] === '1';
+
+            return (
+                <div>
+                    <button
+                        id={setting.key}
+                        type="button"
+                        role="switch"
+                        aria-checked={enabled}
+                        onClick={() => update(setting.key, enabled ? '0' : '1')}
+                        className={`flex w-full items-center justify-between gap-5 rounded border px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-photo ${
+                            enabled
+                                ? 'border-photo/55 bg-photo/10'
+                                : 'border-border bg-base hover:border-fg-dim/60'
+                        }`}
+                    >
+                        <span>
+                            <span className="block text-sm font-medium text-fg">
+                                {setting.label}
+                            </span>
+                            <span className="mt-0.5 block text-xs leading-5 text-fg-dim">
+                                Show this section on the public photography page.
+                            </span>
+                        </span>
+                        <span
+                            aria-hidden="true"
+                            className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
+                                enabled
+                                    ? 'border-photo bg-photo'
+                                    : 'border-fg-dim/60 bg-panel'
+                            }`}
+                        >
+                            <span
+                                className={`absolute top-0.5 size-4.5 rounded-full bg-white shadow-sm transition-transform ${
+                                    enabled ? 'translate-x-5' : 'translate-x-0.5'
+                                }`}
+                            />
+                        </span>
+                    </button>
+                    {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
+                </div>
+            );
+        }
 
         if (setting.type === 'image') {
             return (
@@ -357,12 +402,14 @@ export default function Settings({ groups }) {
                                 <div className="space-y-5 rounded border border-border bg-panel/35 p-5 sm:p-6">
                                     {group.settings.map((setting) => (
                                         <div key={setting.key}>
-                                            <label
-                                                htmlFor={setting.key}
-                                                className="mb-1.5 block text-sm font-medium text-fg"
-                                            >
-                                                {setting.label}
-                                            </label>
+                                            {setting.type !== 'boolean' && (
+                                                <label
+                                                    htmlFor={setting.key}
+                                                    className="mb-1.5 block text-sm font-medium text-fg"
+                                                >
+                                                    {setting.label}
+                                                </label>
+                                            )}
 
                                             {renderField(setting)}
                                         </div>

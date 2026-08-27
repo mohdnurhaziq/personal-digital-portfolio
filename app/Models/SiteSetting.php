@@ -23,6 +23,9 @@ class SiteSetting extends Model implements HasMedia
     /** Settings of this type own an uploaded image instead of a text value. */
     public const TYPE_IMAGE = 'image';
 
+    /** Settings of this type render as an on/off switch in the admin. */
+    public const TYPE_BOOLEAN = 'boolean';
+
     public const COLLECTION = 'file';
 
     protected $guarded = [];

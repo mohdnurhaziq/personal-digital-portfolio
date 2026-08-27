@@ -26,6 +26,8 @@ class SettingsController extends Controller
     public function edit(): Response
     {
         $groups = SiteSetting::query()
+            // Visibility switches belong at the top of each settings panel.
+            ->orderByRaw("CASE WHEN type = 'boolean' THEN 0 ELSE 1 END")
             ->orderBy('id')
             // File settings render a preview of what is already uploaded.
             ->with('media')
@@ -66,7 +68,9 @@ class SettingsController extends Controller
         $messages = [];
 
         foreach ($known as $key => $type) {
-            if ($type === SiteSetting::TYPE_FILE) {
+            if ($type === SiteSetting::TYPE_BOOLEAN) {
+                $rules["settings.{$key}"] = ['sometimes', 'required', 'in:0,1'];
+            } elseif ($type === SiteSetting::TYPE_FILE) {
                 $rules["uploads.{$key}"] = ['nullable', 'file', 'mimetypes:application/pdf', 'mimes:pdf', 'max:8192'];
                 $messages["uploads.{$key}.mimetypes"] = 'The file must be a PDF.';
                 $messages["uploads.{$key}.mimes"] = 'The file must be a PDF.';

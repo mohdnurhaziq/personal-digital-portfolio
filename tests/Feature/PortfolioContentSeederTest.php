@@ -35,7 +35,7 @@ class PortfolioContentSeederTest extends TestCase
 
     public function test_it_seeds_every_content_table(): void
     {
-        $this->assertSame(34, SiteSetting::count());
+        $this->assertSame(39, SiteSetting::count());
         $this->assertSame(3, Stat::count());
         $this->assertSame(12, TechStack::count());
         $this->assertSame(4, Project::count());
@@ -103,6 +103,6 @@ class PortfolioContentSeederTest extends TestCase
 
         $this->assertSame(4, Project::count());
         $this->assertSame(8, GalleryPhoto::count());
-        $this->assertSame(34, SiteSetting::count());
+        $this->assertSame(39, SiteSetting::count());
     }
 }
