@@ -66,6 +66,35 @@ for (const publicPage of publicPages) {
     });
 }
 
+test('public pages fit mobile screens and landing keeps the lightweight 3D scene', async ({
+    browserName,
+    page,
+}) => {
+    test.skip(browserName !== 'chromium', 'WebGL availability varies in headless browser engines.');
+
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    for (const publicPage of publicPages) {
+        await visit(page, publicPage.path);
+        await expect(
+            page.getByRole('heading', { level: 1, name: publicPage.heading }),
+        ).toBeVisible();
+
+        const dimensions = await page.evaluate(() => ({
+            viewport: window.innerWidth,
+            document: document.documentElement.scrollWidth,
+        }));
+
+        expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
+
+        if (publicPage.path === '/') {
+            const scene = page.locator('[data-scene-quality]');
+            await expect(scene).toHaveAttribute('data-scene-quality', 'mobile');
+            await expect(scene.locator('canvas')).toBeVisible();
+        }
+    }
+});
+
 test('admin routes redirect guests and accept the seeded owner login', async ({ page }) => {
     await visit(page, '/admin');
     await expect(page).toHaveURL(/\/login$/);

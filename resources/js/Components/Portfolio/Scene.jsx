@@ -94,15 +94,20 @@ function SceneContents({ particleCount }) {
     );
 }
 
-export default function Scene({ particleCount = BASE_COUNT }) {
+export default function Scene({
+    particleCount = BASE_COUNT,
+    dpr = [1, 2],
+    antialias = true,
+    powerPreference = 'high-performance',
+}) {
     return (
         <Canvas
             className="pointer-events-none"
             camera={{ fov: 55, position: [0, 0, 8], near: 0.1, far: 100 }}
-            // Cap the pixel ratio: on a 3x phone screen an uncapped buffer is
-            // the single biggest cost in the whole scene.
-            dpr={[1, 2]}
-            gl={{ antialias: true, alpha: true }}
+            // Mobile is fixed at 1x while desktop may render up to 2x. An
+            // uncapped 3x phone buffer is the biggest avoidable scene cost.
+            dpr={dpr}
+            gl={{ antialias, alpha: true, powerPreference }}
         >
             <SceneContents particleCount={particleCount} />
         </Canvas>

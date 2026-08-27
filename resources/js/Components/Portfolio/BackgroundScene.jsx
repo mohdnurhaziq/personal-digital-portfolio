@@ -1,5 +1,10 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import usePrefersReducedMotion from './usePrefersReducedMotion';
+import {
+    COARSE_POINTER_QUERY,
+    MOBILE_SCENE_QUERY,
+    sceneProfileForDevice,
+} from './sceneProfile';
 
 // Lazily imported so three/@react-three never lands in the entry chunk; first
 // paint must not wait on WebGL (see "Performance" in portfolio-plan.md).
@@ -21,16 +26,8 @@ function useSceneProfile() {
             return;
         }
 
-        const small = window.matchMedia('(max-width: 720px)').matches;
-        const coarse = window.matchMedia('(pointer: coarse)').matches;
-
-        // On small screens or touch/coarse pointers (mobile & tablets), skip WebGL
-        // entirely to avoid loading 880 kB of 3D bundle and blocking mobile main threads.
-        // The CSS radial gradient renders immediately and cleanly behind the content.
-        if (small || coarse) {
-            setProfile(null);
-            return;
-        }
+        const small = window.matchMedia(MOBILE_SCENE_QUERY);
+        const coarse = window.matchMedia(COARSE_POINTER_QUERY);
 
         let hasWebgl = false;
         try {
@@ -47,7 +44,22 @@ function useSceneProfile() {
             return;
         }
 
-        setProfile({ particleCount: 1800 });
+        const update = () =>
+            setProfile(
+                sceneProfileForDevice({
+                    small: small.matches,
+                    coarse: coarse.matches,
+                }),
+            );
+
+        update();
+        small.addEventListener('change', update);
+        coarse.addEventListener('change', update);
+
+        return () => {
+            small.removeEventListener('change', update);
+            coarse.removeEventListener('change', update);
+        };
     }, [reducedMotion]);
 
     return profile;
@@ -78,6 +90,7 @@ export default function BackgroundScene({ visible = true }) {
 
     return (
         <div
+            data-scene-quality={profile?.quality ?? 'static'}
             className={`pointer-events-none fixed inset-0 z-0 transition-opacity duration-700 ${
                 visible ? 'opacity-100' : 'opacity-0'
             }`}
@@ -89,7 +102,13 @@ export default function BackgroundScene({ visible = true }) {
 
             {mounted && profile && (
                 <Suspense fallback={null}>
-                    <Scene particleCount={profile.particleCount} />
+                    <Scene
+                        key={profile.quality}
+                        particleCount={profile.particleCount}
+                        dpr={profile.dpr}
+                        antialias={profile.antialias}
+                        powerPreference={profile.powerPreference}
+                    />
                 </Suspense>
             )}
         </div>
