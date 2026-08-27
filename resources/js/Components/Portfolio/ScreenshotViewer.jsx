@@ -54,7 +54,7 @@ export default function ScreenshotViewer({
         <dialog
             ref={ref}
             aria-label={`${title} ${itemLabel} viewer`}
-            className="m-0 h-[100dvh] w-screen max-h-none max-w-none overflow-hidden bg-transparent p-0 text-white backdrop:bg-[#02050b]/95"
+            className="m-0 h-[100dvh] w-screen max-h-none max-w-none cursor-default overflow-hidden bg-transparent p-0 text-white backdrop:bg-[#02050b]/95"
             // Clicking the backdrop lands on the dialog itself rather than its
             // contents, which is what makes this a reliable click-outside.
             onClick={(event) => {
@@ -102,7 +102,7 @@ export default function ScreenshotViewer({
                                 type="button"
                                 onClick={() => step(-1)}
                                 aria-label={`Previous ${itemLabel}`}
-                                className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/75 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:left-6 sm:size-11"
+                                className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/75 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:left-6 sm:size-11"
                             >
                                 <FiChevronLeft className="size-5" aria-hidden="true" />
                             </button>
@@ -110,7 +110,7 @@ export default function ScreenshotViewer({
                                 type="button"
                                 onClick={() => step(1)}
                                 aria-label={`Next ${itemLabel}`}
-                                className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/75 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-6 sm:size-11"
+                                className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/75 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-6 sm:size-11"
                             >
                                 <FiChevronRight className="size-5" aria-hidden="true" />
                             </button>
@@ -121,7 +121,7 @@ export default function ScreenshotViewer({
                         type="button"
                         onClick={onClose}
                         aria-label={`Close ${itemLabel} viewer`}
-                        className="absolute right-4 top-4 flex size-10 items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/70 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-6 sm:top-5"
+                        className="absolute right-4 top-4 flex size-10 cursor-pointer items-center justify-center rounded-full border border-white/15 bg-[#080d16]/85 text-white/70 shadow-lg backdrop-blur-md transition hover:border-white/35 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:right-6 sm:top-5"
                     >
                         <FiX className="size-5" aria-hidden="true" />
                     </button>

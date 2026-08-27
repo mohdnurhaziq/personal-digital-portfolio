@@ -15,8 +15,24 @@ const theme = themeFor('photo');
 
 const label = (category) => category.charAt(0).toUpperCase() + category.slice(1);
 
+// Mixed portrait and landscape frames without changing column width. Keeping
+// the sequence deterministic avoids a reshuffle after hydration or reload.
+const galleryOrientations = [
+    'aspect-3/4',
+    'aspect-4/3',
+    'aspect-3/4',
+    'aspect-3/4',
+    'aspect-4/3',
+    'aspect-3/4',
+    'aspect-4/3',
+    'aspect-4/3',
+    'aspect-3/4',
+    'aspect-3/4',
+];
+
 function Photographer({ settings, tags, gear, photos, categories, contactLinks }) {
     const [active, setActive] = useState('all');
+    const [gearIndex, setGearIndex] = useState(null);
     const [photoIndex, setPhotoIndex] = useState(null);
     const { navigate, setCursorTheme } = usePortfolio();
 
@@ -27,6 +43,13 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
     const visible = useMemo(
         () => (active === 'all' ? photos : photos.filter((photo) => photo.category === active)),
         [active, photos],
+    );
+    const viewableGear = useMemo(
+        () =>
+            gear
+                .filter((item) => item.image_url)
+                .map((item) => ({ ...item, title: item.category })),
+        [gear],
     );
     const viewablePhotos = useMemo(
         () => visible.filter((photo) => photo.thumb_url && photo.image_url),
@@ -77,17 +100,41 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                 title={item.category}
                             >
                                 {item.image_url && (
-                                    <img
-                                        src={item.image_url}
-                                        alt=""
-                                        loading="lazy"
-                                        className="mb-4 aspect-4/3 w-full rounded border border-cream-border object-cover"
-                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setGearIndex(
+                                                viewableGear.findIndex(
+                                                    (viewable) =>
+                                                        viewable.category === item.category,
+                                                ),
+                                            )
+                                        }
+                                        aria-label={`View ${item.category} gear photo fullscreen`}
+                                        aria-haspopup="dialog"
+                                        className="group mb-4 block w-full cursor-zoom-in overflow-hidden rounded border border-cream-border focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photo"
+                                    >
+                                        <img
+                                            src={item.image_url}
+                                            alt={`${item.category}: ${item.value}`}
+                                            loading="lazy"
+                                            className="aspect-4/3 w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+                                        />
+                                    </button>
                                 )}
                                 <p className={`text-sm ${theme.cardBody}`}>{item.value}</p>
                             </Card>
                         ))}
                     </div>
+
+                    <ScreenshotViewer
+                        screenshots={viewableGear}
+                        index={gearIndex}
+                        title="Photography gear"
+                        itemLabel="photo"
+                        onClose={() => setGearIndex(null)}
+                        onIndexChange={setGearIndex}
+                    />
                 </Section>
 
                 <Section title="Gallery" theme={theme}>
@@ -123,11 +170,11 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                         })}
                     </Reveal>
 
-                    <ul className="grid grid-cols-2 gap-5 md:grid-cols-4">
-                        {visible.map((photo, index) => (
+                    <ul className="columns-2 gap-5 md:columns-4">
+                        {viewablePhotos.map((photo, index) => (
                             <li
                                 key={photo.id}
-                                className={`polaroid aspect-3/4 rounded ${index % 4 === 1 ? 'md:aspect-4/3' : ''}`}
+                                className={`polaroid mb-5 inline-block w-full break-inside-avoid rounded align-top ${galleryOrientations[index % galleryOrientations.length]}`}
                                 style={{
                                     // Staggered drift so the grid feels alive rather than static.
                                     '--float-dur': `${6 + (index % 3)}s`,
@@ -137,13 +184,7 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                                 {photo.thumb_url && photo.image_url && (
                                     <button
                                         type="button"
-                                        onClick={() =>
-                                            setPhotoIndex(
-                                                viewablePhotos.findIndex(
-                                                    (viewable) => viewable.id === photo.id,
-                                                ),
-                                            )
-                                        }
+                                        onClick={() => setPhotoIndex(index)}
                                         aria-label={`View ${photo.title || 'gallery photo'} fullscreen`}
                                         aria-haspopup="dialog"
                                         className="group absolute inset-2.5 z-1 cursor-zoom-in overflow-hidden rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-photo"
@@ -169,7 +210,7 @@ function Photographer({ settings, tags, gear, photos, categories, contactLinks }
                         onIndexChange={setPhotoIndex}
                     />
 
-                    {visible.length === 0 && (
+                    {viewablePhotos.length === 0 && (
                         <p className={`mt-6 text-sm ${theme.body}`}>No photos in this category yet.</p>
                     )}
                 </Section>
